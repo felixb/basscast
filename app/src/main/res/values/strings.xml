@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">BassCast</string>
+    <string name="action_settings">Settings</string>
+    <string name="action_cast">Connect to Google Cast</string>
+    <string name="action_save">Save</string>
+    <string name="action_delete">Delete</string>
+    <string name="action_play">Play</string>
+</resources>
