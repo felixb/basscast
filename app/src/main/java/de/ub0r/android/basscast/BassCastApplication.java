@@ -37,7 +37,7 @@ public class BassCastApplication extends Application {
             ), false));
 
             cr.insert(StreamsTable.CONTENT_URI, StreamsTable.getContentValues(new Stream(
-                    "http://amsterdam2.shouthost.com.streams.bassdrive.com:8000",
+                    "http://amsterdam2.shouthost.com.streams.bassdrive.com:8000/;",
                     "bassdrive",
                     MediaMetadata.MEDIA_TYPE_MUSIC_TRACK,
                     "audio/mpeg"
