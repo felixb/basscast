@@ -20,10 +20,10 @@ public class Stream {
     public long id = -1;
 
     @SimpleSQLColumn("base_id")
-    public long baseId;
+    public long baseId = -1;
 
     @SimpleSQLColumn("parent_id")
-    public long parentId;
+    public long parentId = -1;
 
     @SimpleSQLColumn("url")
     public String url;
@@ -50,8 +50,8 @@ public class Stream {
 
     public Stream(final Bundle bundle) {
         this.id = bundle.getLong(StreamsTable.FIELD__ID, -1);
-        this.baseId = bundle.getLong(StreamsTable.FIELD_BASE_ID);
-        this.parentId = bundle.getLong(StreamsTable.FIELD_PARENT_ID);
+        this.baseId = bundle.getLong(StreamsTable.FIELD_BASE_ID, -1);
+        this.parentId = bundle.getLong(StreamsTable.FIELD_PARENT_ID, -1);
         this.url = bundle.getString(StreamsTable.FIELD_URL);
         this.title = bundle.getString(StreamsTable.FIELD_TITLE);
         this.type = bundle.getInt(StreamsTable.FIELD_TYPE);

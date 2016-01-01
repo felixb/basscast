@@ -297,7 +297,7 @@ public class BrowseActivity extends AppCompatActivity {
         switch (keyCode) {
             case KeyEvent.KEYCODE_VOLUME_UP:
                 if (action == KeyEvent.ACTION_DOWN) {
-                    if (mApiClient!=null &&mRemoteMediaPlayer != null) {
+                    if (mApiClient != null && mRemoteMediaPlayer != null) {
                         double currentVolume = Cast.CastApi.getVolume(mApiClient);
                         if (currentVolume < 1.0) {
                             try {
@@ -314,7 +314,7 @@ public class BrowseActivity extends AppCompatActivity {
                 return true;
             case KeyEvent.KEYCODE_VOLUME_DOWN:
                 if (action == KeyEvent.ACTION_DOWN) {
-                    if (mApiClient!=null &&mRemoteMediaPlayer != null) {
+                    if (mApiClient != null && mRemoteMediaPlayer != null) {
                         double currentVolume = Cast.CastApi.getVolume(mApiClient);
                         if (currentVolume > 0.0) {
                             try {
