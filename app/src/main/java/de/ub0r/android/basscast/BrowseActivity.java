@@ -22,6 +22,7 @@ import android.support.v7.media.MediaRouteSelector;
 import android.support.v7.media.MediaRouter;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -149,6 +150,8 @@ public class BrowseActivity extends AppCompatActivity {
     }
 
     private static final String TAG = "BrowserActivity";
+
+    private static final double VOLUME_INCREMENT = 0.05;
 
     private boolean mWaitingForReconnect;
 
@@ -285,6 +288,50 @@ public class BrowseActivity extends AppCompatActivity {
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    public boolean dispatchKeyEvent(final KeyEvent event) {
+        final int action = event.getAction();
+        final int keyCode = event.getKeyCode();
+        switch (keyCode) {
+            case KeyEvent.KEYCODE_VOLUME_UP:
+                if (action == KeyEvent.ACTION_DOWN) {
+                    if (mApiClient!=null &&mRemoteMediaPlayer != null) {
+                        double currentVolume = Cast.CastApi.getVolume(mApiClient);
+                        if (currentVolume < 1.0) {
+                            try {
+                                Cast.CastApi.setVolume(mApiClient,
+                                        Math.min(currentVolume + VOLUME_INCREMENT, 1.0));
+                            } catch (Exception e) {
+                                Log.e(TAG, "unable to set volume", e);
+                            }
+                        }
+                    } else {
+                        return false;
+                    }
+                }
+                return true;
+            case KeyEvent.KEYCODE_VOLUME_DOWN:
+                if (action == KeyEvent.ACTION_DOWN) {
+                    if (mApiClient!=null &&mRemoteMediaPlayer != null) {
+                        double currentVolume = Cast.CastApi.getVolume(mApiClient);
+                        if (currentVolume > 0.0) {
+                            try {
+                                Cast.CastApi.setVolume(mApiClient,
+                                        Math.max(currentVolume - VOLUME_INCREMENT, 0.0));
+                            } catch (Exception e) {
+                                Log.e(TAG, "unable to set volume", e);
+                            }
+                        }
+                    } else {
+                        return false;
+                    }
+                }
+                return true;
+            default:
+                return super.dispatchKeyEvent(event);
+        }
     }
 
     private void launchReceiver() {
