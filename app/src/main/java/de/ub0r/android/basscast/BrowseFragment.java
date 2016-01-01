@@ -129,12 +129,12 @@ public class BrowseFragment extends Fragment implements LoaderManager.LoaderCall
     @Override
     public Loader<Cursor> onCreateLoader(final int id, final Bundle args) {
         return new CursorLoader(getActivity(), StreamsTable.CONTENT_URI, null,
-                StreamsTable.FIELD_BASE_ID + "<0", null, null);
+                StreamsTable.FIELD_BASE_ID + "<0", null, StreamsTable.FIELD_TITLE + " ASC");
     }
 
     @Override
     public void onLoadFinished(final Loader<Cursor> loader, final Cursor data) {
-        Log.d(TAG, "showing new data set: " + data.getCount());
+        Log.d(TAG, "Showing new data set: " + data.getCount());
         mAdapter.swapCursor(data);
     }
 
