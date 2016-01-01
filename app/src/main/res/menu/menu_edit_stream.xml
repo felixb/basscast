@@ -10,7 +10,7 @@
             app:showAsAction="always"/>
     <item
             android:id="@+id/action_delete"
-            android:icon="@drawable/ic_action_content_clear"
+            android:icon="@drawable/ic_action_action_delete"
             android:title="@string/action_delete"
             app:showAsAction="ifRoom"/>
 

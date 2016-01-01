@@ -19,7 +19,9 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
-        <activity android:name=".EditStreamActivity"/>
+        <activity
+                android:name=".EditStreamActivity"
+                android:parentActivityName=".BrowseActivity"/>
 
         <provider
                 android:name=".model.StreamProvider"
