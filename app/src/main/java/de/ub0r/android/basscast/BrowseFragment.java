@@ -14,6 +14,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageButton;
 import android.widget.TextView;
 
 import butterknife.Bind;
@@ -22,7 +23,8 @@ import butterknife.OnClick;
 import de.ub0r.android.basscast.model.Stream;
 import de.ub0r.android.basscast.model.StreamsTable;
 
-public class BrowseFragment extends Fragment implements LoaderManager.LoaderCallbacks<Cursor> {
+public class BrowseFragment extends Fragment
+        implements LoaderManager.LoaderCallbacks<Cursor>, BrowseActivity.OnStateChangeListener {
 
     class StreamHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
 
@@ -33,6 +35,9 @@ public class BrowseFragment extends Fragment implements LoaderManager.LoaderCall
 
         @Bind(R.id.url)
         TextView mUrlView;
+
+        @Bind(R.id.action_play)
+        ImageButton mPlayButton;
 
         public StreamHolder(final View itemView) {
             super(itemView);
@@ -60,6 +65,7 @@ public class BrowseFragment extends Fragment implements LoaderManager.LoaderCall
             mStream = stream;
             mTitleView.setText(stream.title);
             mUrlView.setText(stream.url);
+            mPlayButton.setVisibility(isApplicationStarted() ? View.VISIBLE : View.GONE);
         }
     }
 
@@ -114,6 +120,18 @@ public class BrowseFragment extends Fragment implements LoaderManager.LoaderCall
     }
 
     @Override
+    public void onAttach(Context context) {
+        super.onAttach(context);
+        getBrowseActivity().setOnStateChangeListener(this);
+    }
+
+    @Override
+    public void onDetach() {
+        getBrowseActivity().setOnStateChangeListener(null);
+        super.onDetach();
+    }
+
+    @Override
     public void onResume() {
         super.onResume();
         getLoaderManager().restartLoader(LOADER_BROWSE, null, this);
@@ -121,8 +139,9 @@ public class BrowseFragment extends Fragment implements LoaderManager.LoaderCall
 
     @Override
     public void onDestroyView() {
-        super.onDestroyView();
+        getBrowseActivity().setOnStateChangeListener(null);
         ButterKnife.unbind(this);
+        super.onDestroyView();
     }
 
 
@@ -141,5 +160,16 @@ public class BrowseFragment extends Fragment implements LoaderManager.LoaderCall
     @Override
     public void onLoaderReset(final Loader<Cursor> loader) {
         mAdapter.swapCursor(null);
+    }
+
+    @Override
+    public void onStateChange() {
+        if (mAdapter != null) {
+            mAdapter.notifyDataSetChanged();
+        }
+    }
+
+    private boolean isApplicationStarted() {
+        return getBrowseActivity().isApplicationStarted();
     }
 }

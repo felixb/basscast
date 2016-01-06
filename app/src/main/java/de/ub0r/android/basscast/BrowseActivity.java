@@ -44,6 +44,10 @@ import de.ub0r.android.basscast.model.Stream;
 
 public class BrowseActivity extends AppCompatActivity {
 
+    interface OnStateChangeListener {
+        void onStateChange();
+    }
+
     private class MediaRouterCallback extends MediaRouter.Callback {
 
         @Override
@@ -85,6 +89,7 @@ public class BrowseActivity extends AppCompatActivity {
             }
 
             updateControlViews(true);
+
         }
 
         @Override
@@ -106,7 +111,7 @@ public class BrowseActivity extends AppCompatActivity {
                                         Status status = result.getStatus();
                                         if (status.isSuccess()) {
                                             Log.i(TAG, "Joined session: " + mRouteInfo.getName());
-                                            mApplicationStarted = true;
+                                            setApplicationStarted(true);
                                             mMediaRouter.selectRoute(mRouteInfo);
                                             connectRemoteMediaPlayer();
                                         } else {
@@ -131,7 +136,7 @@ public class BrowseActivity extends AppCompatActivity {
                                             @NonNull final Cast.ApplicationConnectionResult result) {
                                         Status status = result.getStatus();
                                         if (status.isSuccess()) {
-                                            mApplicationStarted = true;
+                                            setApplicationStarted(true);
                                             mSessionId = result.getSessionId();
                                             getSharedPreferences(PREFS_FILE_CHROMECAST,
                                                     MODE_PRIVATE).edit()
@@ -226,6 +231,8 @@ public class BrowseActivity extends AppCompatActivity {
     private String mSessionId;
 
     private GoogleApiClient mApiClient;
+
+    private OnStateChangeListener mOnStateChangeListener;
 
     private Cast.Listener mCastClientListener = new Cast.Listener() {
         @Override
@@ -450,10 +457,25 @@ public class BrowseActivity extends AppCompatActivity {
         }
     }
 
+    void setOnStateChangeListener(final OnStateChangeListener listener) {
+        mOnStateChangeListener = listener;
+    }
+
+    boolean isApplicationStarted() {
+        return mApplicationStarted;
+    }
+
+    void setApplicationStarted(final boolean started) {
+        mApplicationStarted = started;
+        if (mOnStateChangeListener != null) {
+            mOnStateChangeListener.onStateChange();
+        }
+    }
+
     private void updateControlViews(final boolean showAnimations) {
         MediaStatus status = mRemoteMediaPlayer.getMediaStatus();
         MediaInfo info = mRemoteMediaPlayer.getMediaInfo();
-        boolean showControls = mApplicationStarted
+        boolean showControls = isApplicationStarted()
                 && status != null && info != null && info.getMetadata() != null
                 && (MediaStatus.PLAYER_STATE_PLAYING == status.getPlayerState()
                 || MediaStatus.PLAYER_STATE_BUFFERING == status.getPlayerState()
@@ -524,12 +546,12 @@ public class BrowseActivity extends AppCompatActivity {
     private void teardown() {
         Log.d(TAG, "Tear down cast connection");
         if (mApiClient != null) {
-            if (mApplicationStarted) {
+            if (isApplicationStarted()) {
                 if (mApiClient.isConnected() || mApiClient.isConnecting()) {
                     Cast.CastApi.stopApplication(mApiClient, mSessionId);
                     mApiClient.disconnect();
                 }
-                mApplicationStarted = false;
+                setApplicationStarted(false);
             }
             mApiClient = null;
         }
