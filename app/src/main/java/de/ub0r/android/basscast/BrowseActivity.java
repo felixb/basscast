@@ -4,6 +4,7 @@ import com.google.android.gms.cast.Cast;
 import com.google.android.gms.cast.CastDevice;
 import com.google.android.gms.cast.CastMediaControlIntent;
 import com.google.android.gms.cast.MediaInfo;
+import com.google.android.gms.cast.MediaMetadata;
 import com.google.android.gms.cast.MediaStatus;
 import com.google.android.gms.cast.RemoteMediaPlayer;
 import com.google.android.gms.common.ConnectionResult;
@@ -11,6 +12,8 @@ import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.ResultCallback;
 import com.google.android.gms.common.api.Status;
 
+import android.animation.AnimatorSet;
+import android.animation.ObjectAnimator;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
@@ -27,10 +30,16 @@ import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.ImageButton;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import java.io.IOException;
 
+import butterknife.Bind;
+import butterknife.BindDimen;
+import butterknife.ButterKnife;
+import butterknife.OnClick;
 import de.ub0r.android.basscast.model.Stream;
 
 public class BrowseActivity extends AppCompatActivity {
@@ -74,6 +83,8 @@ public class BrowseActivity extends AppCompatActivity {
             } else {
                 newSession();
             }
+
+            updateControlViews(true);
         }
 
         @Override
@@ -97,6 +108,7 @@ public class BrowseActivity extends AppCompatActivity {
                                             Log.i(TAG, "Joined session: " + mRouteInfo.getName());
                                             mApplicationStarted = true;
                                             mMediaRouter.selectRoute(mRouteInfo);
+                                            connectRemoteMediaPlayer();
                                         } else {
                                             teardown();
                                         }
@@ -254,6 +266,24 @@ public class BrowseActivity extends AppCompatActivity {
 
     private CastDevice mSelectedDevice;
 
+    @Bind(R.id.fab)
+    FloatingActionButton mFloatingActionButtonView;
+
+    @Bind(R.id.controls)
+    View mControlsLayout;
+
+    @Bind(R.id.control_title)
+    TextView mTitleView;
+
+    @Bind(R.id.control_action_play)
+    ImageButton mPlayView;
+
+    @Bind(R.id.control_action_stop)
+    ImageButton mStopView;
+
+    @BindDimen(R.dimen.controls_height)
+    int mControlsHeight;
+
     @Override
     protected void onStart() {
         super.onStart();
@@ -271,6 +301,8 @@ public class BrowseActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_browse);
+        ButterKnife.bind(this);
+
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
@@ -278,8 +310,7 @@ public class BrowseActivity extends AppCompatActivity {
         mRouteId = preferences.getString(PREFS_ROUTE_ID, null);
         mSessionId = preferences.getString(PREFS_SESSION_ID, null);
 
-        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
-        fab.setOnClickListener(new View.OnClickListener() {
+        mFloatingActionButtonView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 startActivity(new Intent(Intent.ACTION_INSERT, null, BrowseActivity.this,
@@ -314,13 +345,17 @@ public class BrowseActivity extends AppCompatActivity {
                     @Override
                     public void onMetadataUpdated() {
                         MediaInfo mediaInfo = mRemoteMediaPlayer.getMediaInfo();
-                        if (mediaInfo != null) {
-                            Log.d(TAG, "Remote media player metadata updated: " + mediaInfo);
+                        if (mediaInfo == null) {
+                            Log.d(TAG, "RemoteMediaPlayer metadata updated: null");
+                        } else {
+                            Log.d(TAG, "RemoteMediaPlayer metadata updated: " + mediaInfo);
                         }
+                        updateControlViews(true);
                     }
                 });
 
         restoreRoute();
+        updateControlViews(false);
     }
 
     @Override
@@ -378,6 +413,85 @@ public class BrowseActivity extends AppCompatActivity {
         }
     }
 
+    @OnClick(R.id.control_action_stop)
+    void onStopClick() {
+        mRemoteMediaPlayer.stop(mApiClient).setResultCallback(
+                new ResultCallback<RemoteMediaPlayer.MediaChannelResult>() {
+                    @Override
+                    public void onResult(
+                            @NonNull final RemoteMediaPlayer.MediaChannelResult mediaChannelResult) {
+                        updateControlViews(true);
+                    }
+                });
+    }
+
+    @OnClick(R.id.control_action_play)
+    void onPlayClick() {
+        MediaStatus status = mRemoteMediaPlayer.getMediaStatus();
+
+        if (MediaStatus.PLAYER_STATE_PAUSED == status.getPlayerState()) {
+            mRemoteMediaPlayer.play(mApiClient).setResultCallback(
+                    new ResultCallback<RemoteMediaPlayer.MediaChannelResult>() {
+                        @Override
+                        public void onResult(
+                                @NonNull final RemoteMediaPlayer.MediaChannelResult mediaChannelResult) {
+                            updateControlViews(true);
+                        }
+                    });
+        } else { // MediaStatus.PLAYER_STATE_PLAYING || MediaStatus.PLAYER_STATE_BUFFERING
+            mRemoteMediaPlayer.pause(mApiClient).setResultCallback(
+                    new ResultCallback<RemoteMediaPlayer.MediaChannelResult>() {
+                        @Override
+                        public void onResult(
+                                @NonNull final RemoteMediaPlayer.MediaChannelResult mediaChannelResult) {
+                            updateControlViews(true);
+                        }
+                    });
+        }
+    }
+
+    private void updateControlViews(final boolean showAnimations) {
+        MediaStatus status = mRemoteMediaPlayer.getMediaStatus();
+        MediaInfo info = mRemoteMediaPlayer.getMediaInfo();
+        boolean showControls = mApplicationStarted
+                && status != null && info != null && info.getMetadata() != null
+                && (MediaStatus.PLAYER_STATE_PLAYING == status.getPlayerState()
+                || MediaStatus.PLAYER_STATE_BUFFERING == status.getPlayerState()
+                || MediaStatus.PLAYER_STATE_PAUSED == status.getPlayerState());
+
+        if (showControls) {
+            mTitleView.setText(info.getMetadata().getString(MediaMetadata.KEY_TITLE));
+            if (MediaStatus.PLAYER_STATE_PAUSED == status.getPlayerState()) {
+                mPlayView.setImageResource(R.drawable.ic_av_play_arrow);
+                mStopView.setVisibility(View.VISIBLE);
+            } else { // MediaStatus.PLAYER_STATE_PLAYING || MediaStatus.PLAYER_STATE_BUFFERING
+                mPlayView.setImageResource(R.drawable.ic_av_pause);
+                mStopView.setVisibility(View.VISIBLE);
+            }
+        }
+
+        if (showControls) {
+            setControlsPosition(0, showAnimations);
+        } else {
+            setControlsPosition(mControlsHeight, showAnimations);
+        }
+    }
+
+    private void setControlsPosition(final float translationY, final boolean showAnimations) {
+        if (showAnimations) {
+            AnimatorSet anim = new AnimatorSet();
+            anim
+                    .play(ObjectAnimator.ofFloat(mControlsLayout, View.TRANSLATION_Y,
+                            translationY))
+                    .with(ObjectAnimator.ofFloat(mFloatingActionButtonView, View.TRANSLATION_Y,
+                            translationY + mControlsHeight * -1));
+            anim.start();
+        } else {
+            mControlsLayout.setTranslationY(translationY);
+            mFloatingActionButtonView.setTranslationY(translationY + mControlsHeight * -1);
+        }
+    }
+
     private void restoreRoute() {
         if (mRouteId != null) {
             Log.d(TAG, "Restore route");
@@ -428,6 +542,8 @@ public class BrowseActivity extends AppCompatActivity {
                 .remove(PREFS_ROUTE_ID)
                 .remove(PREFS_SESSION_ID)
                 .apply();
+
+        updateControlViews(true);
     }
 
     private void reconnectChannels() {

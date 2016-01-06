@@ -4,10 +4,26 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
+    <ImageButton
+            android:id="@+id/action_play"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentTop="true"
+            android:layout_alignParentRight="true"
+            android:layout_alignParentEnd="true"
+            android:src="@drawable/ic_av_play_arrow"
+            android:background="@android:color/transparent"
+            android:text="@string/action_play"/>
+
     <TextView
             android:id="@+id/title"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_alignParentLeft="true"
+            android:layout_alignParentStart="true"
+            android:layout_toLeftOf="@id/action_play"
+            android:layout_toStartOf="@id/action_play"
+            android:textAppearance="?android:textAppearanceLarge"
             android:text="A fancy stream"/>
 
     <TextView
@@ -17,16 +33,11 @@
             android:layout_below="@+id/title"
             android:layout_alignParentLeft="true"
             android:layout_alignParentStart="true"
+            android:layout_toLeftOf="@id/action_play"
+            android:layout_toStartOf="@id/action_play"
+            android:textAppearance="?android:textAppearanceSmall"
+            android:ellipsize="middle"
+            android:maxLines="2"
             android:text="http://example.org/stream"/>
-
-    <ImageButton
-            android:id="@+id/action_play"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_alignParentTop="true"
-            android:layout_alignParentRight="true"
-            android:layout_alignParentEnd="true"
-            android:src="@drawable/ic_av_play_arrow"
-            android:text="@string/action_play"/>
 
 </RelativeLayout>

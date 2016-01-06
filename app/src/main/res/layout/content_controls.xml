@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:app="http://schemas.android.com/apk/res-auto"
+        android:id="@+id/controls"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/controls_height"
+        android:layout_gravity="bottom|start"
+        android:paddingLeft="@dimen/activity_horizontal_margin"
+        android:paddingRight="@dimen/activity_horizontal_margin"
+        android:elevation="@dimen/controls_elevation"
+        app:elevation="@dimen/controls_elevation"
+        android:background="@android:color/white">
+
+    <ImageButton
+            android:id="@+id/control_action_play"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentRight="true"
+            android:layout_alignParentEnd="true"
+            android:src="@drawable/ic_av_play_arrow"
+            android:background="@android:color/transparent"/>
+
+    <ImageButton
+            android:id="@+id/control_action_stop"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_toLeftOf="@id/control_action_play"
+            android:layout_toStartOf="@id/control_action_play"
+            android:src="@drawable/ic_av_stop"
+            android:background="@android:color/transparent"/>
+
+    <TextView
+            android:id="@+id/control_title"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:gravity="center_vertical"
+            android:layout_alignParentLeft="true"
+            android:layout_alignParentStart="true"
+            android:layout_toLeftOf="@id/control_action_stop"
+            android:layout_toStartOf="@id/control_action_stop"
+            android:textAppearance="?android:textAppearanceLarge"
+            android:text="Stream title"/>
+
+</RelativeLayout>
