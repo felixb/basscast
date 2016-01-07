@@ -10,6 +10,8 @@ import android.text.TextUtils;
 
 import ckm.simple.sql_provider.annotation.SimpleSQLColumn;
 import ckm.simple.sql_provider.annotation.SimpleSQLTable;
+import de.ub0r.android.basscast.InputError;
+import de.ub0r.android.basscast.R;
 
 /**
  * @author flx
@@ -104,13 +106,15 @@ public class Stream {
 
     public void parseMimeType() {
         if (TextUtils.isEmpty(mimeType)) {
-            throw new IllegalArgumentException("missing mandatory parameter: mimeType");
+            throw new InputError("missing mandatory parameter: mimeType",
+                    R.string.missing_mandatory_parameter);
         } else if (mimeType.startsWith("audio")) {
             type = MediaMetadata.MEDIA_TYPE_MUSIC_TRACK;
         } else if (mimeType.startsWith("video")) {
             type = MediaMetadata.MEDIA_TYPE_MOVIE;
         } else {
-            throw new IllegalArgumentException("unsupported mime type: " + mimeType);
+            throw new InputError("unsupported mime type: " + mimeType,
+                    R.string.unsupported_mime_type);
         }
     }
 }

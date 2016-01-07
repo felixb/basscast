@@ -7,6 +7,8 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.PersistableBundle;
 import android.support.v7.app.AppCompatActivity;
+import android.text.TextUtils;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.EditText;
@@ -17,6 +19,8 @@ import de.ub0r.android.basscast.model.Stream;
 import de.ub0r.android.basscast.model.StreamsTable;
 
 public class EditStreamActivity extends AppCompatActivity {
+
+    private static final String TAG = "EditStreamActivity";
 
     private static final String ARG_STREAM = "STREAM";
 
@@ -71,8 +75,12 @@ public class EditStreamActivity extends AppCompatActivity {
     public boolean onOptionsItemSelected(final MenuItem item) {
         switch (item.getItemId()) {
             case R.id.action_save:
-                saveStream();
-                finish();
+                try {
+                    saveStream();
+                    finish();
+                } catch (IllegalArgumentException e) {
+                    Log.e(TAG, "saving stream failed");
+                }
                 return true;
             case R.id.action_delete:
                 deleteStream();
@@ -90,10 +98,42 @@ public class EditStreamActivity extends AppCompatActivity {
     }
 
     private void storeStreamFromViews() {
+        boolean valid = checkFields();
         mStream.title = mTitleView.getText().toString();
         mStream.url = mUrlView.getText().toString();
         mStream.mimeType = mMimeTypeView.getText().toString();
-        mStream.parseMimeType();
+
+        try {
+            mStream.parseMimeType();
+        } catch (InputError e) {
+            e.show(this, mMimeTypeView);
+            throw e;
+        }
+        if (!valid) {
+            throw new IllegalArgumentException("input checks failed");
+        }
+    }
+
+    private boolean checkFields() {
+        boolean result = true;
+        if (TextUtils.isEmpty(mTitleView.getText())) {
+            mTitleView.setError(getString(R.string.missing_mandatory_parameter));
+            result = false;
+        }
+
+        if (TextUtils.isEmpty(mUrlView.getText())) {
+            mUrlView.setError(getString(R.string.missing_mandatory_parameter));
+            result = false;
+        } else {
+            final Uri uri = Uri.parse(mUrlView.getText().toString());
+            if (!"http".equals(uri.getScheme())
+                    && !"https".equals(uri.getScheme())) {
+                mUrlView.setError(getString(R.string.invalid_url));
+                result = false;
+            }
+        }
+
+        return result;
     }
 
     private void saveStream() {

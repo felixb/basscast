@@ -8,4 +8,7 @@
     <string name="title_hint">Title</string>
     <string name="url_hint">Url</string>
     <string name="mimeType_hint">Mime Type</string>
+    <string name="missing_mandatory_parameter">Missing mandatory parameter</string>
+    <string name="unsupported_mime_type">Unsupported mime type</string>
+    <string name="invalid_url">Invalid URL</string>
 </resources>
