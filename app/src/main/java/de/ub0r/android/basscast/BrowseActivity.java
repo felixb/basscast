@@ -486,10 +486,10 @@ public class BrowseActivity extends AppCompatActivity {
         if (showControls) {
             mTitleView.setText(info.getMetadata().getString(MediaMetadata.KEY_TITLE));
             if (MediaStatus.PLAYER_STATE_PAUSED == status.getPlayerState()) {
-                mPlayView.setImageResource(R.drawable.ic_av_play_arrow);
+                mPlayView.setImageResource(R.drawable.ic_av_play_ripple);
                 mStopView.setVisibility(View.VISIBLE);
             } else { // MediaStatus.PLAYER_STATE_PLAYING || MediaStatus.PLAYER_STATE_BUFFERING
-                mPlayView.setImageResource(R.drawable.ic_av_pause);
+                mPlayView.setImageResource(R.drawable.ic_av_pause_ripple);
                 mStopView.setVisibility(View.VISIBLE);
             }
         }

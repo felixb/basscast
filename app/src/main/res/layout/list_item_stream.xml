@@ -2,7 +2,8 @@
 <RelativeLayout
         xmlns:android="http://schemas.android.com/apk/res/android"
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="match_parent"
+        android:background="@drawable/list_selector">
 
     <ImageButton
             android:id="@+id/action_play"
@@ -11,7 +12,7 @@
             android:layout_alignParentTop="true"
             android:layout_alignParentRight="true"
             android:layout_alignParentEnd="true"
-            android:src="@drawable/ic_av_play_arrow"
+            android:src="@drawable/ic_av_play_ripple"
             android:background="@android:color/transparent"
             android:text="@string/action_play"/>
 

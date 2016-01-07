@@ -10,7 +10,7 @@
         android:paddingRight="@dimen/activity_horizontal_margin"
         android:elevation="@dimen/controls_elevation"
         app:elevation="@dimen/controls_elevation"
-        android:background="@android:color/white">
+        android:background="@android:color/background_light">
 
     <ImageButton
             android:id="@+id/control_action_play"
@@ -18,7 +18,7 @@
             android:layout_height="wrap_content"
             android:layout_alignParentRight="true"
             android:layout_alignParentEnd="true"
-            android:src="@drawable/ic_av_play_arrow"
+            android:src="@drawable/ic_av_play_ripple"
             android:background="@android:color/transparent"/>
 
     <ImageButton
@@ -27,7 +27,7 @@
             android:layout_height="wrap_content"
             android:layout_toLeftOf="@id/control_action_play"
             android:layout_toStartOf="@id/control_action_play"
-            android:src="@drawable/ic_av_stop"
+            android:src="@drawable/ic_av_stop_ripple"
             android:background="@android:color/transparent"/>
 
     <TextView
