@@ -18,6 +18,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
+import android.support.annotation.VisibleForTesting;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.view.MenuItemCompat;
 import android.support.v7.app.AppCompatActivity;
@@ -465,6 +466,7 @@ public class BrowseActivity extends AppCompatActivity {
         return mApplicationStarted;
     }
 
+    @VisibleForTesting
     void setApplicationStarted(final boolean started) {
         mApplicationStarted = started;
         if (mOnStateChangeListener != null) {
