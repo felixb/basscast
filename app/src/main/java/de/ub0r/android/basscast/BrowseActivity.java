@@ -381,6 +381,9 @@ public class BrowseActivity extends AppCompatActivity {
     public boolean dispatchKeyEvent(final KeyEvent event) {
         final int action = event.getAction();
         final int keyCode = event.getKeyCode();
+        //AudioManager mAudioManager = (AudioManager) getSystemService(AUDIO_SERVICE);
+        //mAudioManager.adjustSuggestedStreamVolume(AudioManager.ADJUST_SAME,
+        //        AudioManager.STREAM_MUSIC, AudioManager.FLAG_SHOW_UI);
         switch (keyCode) {
             case KeyEvent.KEYCODE_VOLUME_UP:
                 if (action == KeyEvent.ACTION_DOWN) {
@@ -395,7 +398,7 @@ public class BrowseActivity extends AppCompatActivity {
                             }
                         }
                     } else {
-                        return false;
+                        return true;
                     }
                 }
                 return true;
@@ -412,7 +415,7 @@ public class BrowseActivity extends AppCompatActivity {
                             }
                         }
                     } else {
-                        return false;
+                        return true;
                     }
                 }
                 return true;

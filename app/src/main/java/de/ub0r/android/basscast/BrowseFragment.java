@@ -97,6 +97,9 @@ public class BrowseFragment extends Fragment
     @Bind(android.R.id.list)
     RecyclerView mRecyclerView;
 
+    @Bind(android.R.id.empty)
+    View mEmptyView;
+
     private StreamAdapter mAdapter;
 
     public BrowseFragment() {
@@ -155,11 +158,13 @@ public class BrowseFragment extends Fragment
     public void onLoadFinished(final Loader<Cursor> loader, final Cursor data) {
         Log.d(TAG, "Showing new data set: " + data.getCount());
         mAdapter.swapCursor(data);
+        setEmptyViewVisibility();
     }
 
     @Override
     public void onLoaderReset(final Loader<Cursor> loader) {
         mAdapter.swapCursor(null);
+        setEmptyViewVisibility();
     }
 
     @Override
@@ -171,5 +176,14 @@ public class BrowseFragment extends Fragment
 
     private boolean isApplicationStarted() {
         return getBrowseActivity().isApplicationStarted();
+    }
+
+    private void setEmptyViewVisibility() {
+        if (mEmptyView == null) {
+            return;
+        }
+        Cursor cursor = mAdapter.getCursor();
+        mEmptyView
+                .setVisibility(cursor == null || cursor.getCount() == 0 ? View.VISIBLE : View.GONE);
     }
 }

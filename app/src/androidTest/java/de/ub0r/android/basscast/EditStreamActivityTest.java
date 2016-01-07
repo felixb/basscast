@@ -19,7 +19,7 @@ import de.ub0r.android.basscast.model.StreamsTable;
 @SuppressLint("SetTextI18n")
 public class EditStreamActivityTest extends ActivityInstrumentationTestCase2<EditStreamActivity> {
 
-    public static final String TEST_URL = "http://example.org/test-stream";
+    private static final String TEST_URL = "http://example.org/test-stream";
 
     public EditStreamActivityTest() {
         super(EditStreamActivity.class);
