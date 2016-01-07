@@ -29,9 +29,6 @@ public class EditStreamActivity extends AppCompatActivity {
     @Bind(R.id.mimeType)
     EditText mMimeTypeView;
 
-    @Bind(R.id.type)
-    EditText mTypeView;
-
     private Stream mStream;
 
     @Override
@@ -89,15 +86,14 @@ public class EditStreamActivity extends AppCompatActivity {
     private void restoreViewsFromStream() {
         mTitleView.setText(mStream.title);
         mUrlView.setText(mStream.url);
-        mTypeView.setText(Integer.toString(mStream.type));
         mMimeTypeView.setText(mStream.mimeType);
     }
 
     private void storeStreamFromViews() {
         mStream.title = mTitleView.getText().toString();
         mStream.url = mUrlView.getText().toString();
-        mStream.type = Integer.parseInt(mTypeView.getText().toString());
         mStream.mimeType = mMimeTypeView.getText().toString();
+        mStream.parseMimeType();
     }
 
     private void saveStream() {

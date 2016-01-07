@@ -5,4 +5,7 @@
     <string name="action_save">Save</string>
     <string name="action_delete">Delete</string>
     <string name="action_play">Play</string>
+    <string name="title_hint">Title</string>
+    <string name="url_hint">Url</string>
+    <string name="mimeType_hint">Mime Type</string>
 </resources>

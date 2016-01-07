@@ -6,6 +6,7 @@ import com.google.android.gms.cast.MediaMetadata;
 import android.content.ContentUris;
 import android.net.Uri;
 import android.os.Bundle;
+import android.text.TextUtils;
 
 import ckm.simple.sql_provider.annotation.SimpleSQLColumn;
 import ckm.simple.sql_provider.annotation.SimpleSQLTable;
@@ -41,11 +42,11 @@ public class Stream {
         // empty default constructor
     }
 
-    public Stream(final String url, final String title, final int type, final String mimeType) {
+    public Stream(final String url, final String title, final String mimeType) {
         this.url = url;
         this.title = title;
-        this.type = type;
         this.mimeType = mimeType;
+        parseMimeType();
     }
 
     public Stream(final Bundle bundle) {
@@ -99,5 +100,17 @@ public class Stream {
                 title.equals(otherStream.title) &&
                 type == otherStream.type &&
                 mimeType.equals(otherStream.mimeType);
+    }
+
+    public void parseMimeType() {
+        if (TextUtils.isEmpty(mimeType)) {
+            throw new IllegalArgumentException("missing mandatory parameter: mimeType");
+        } else if (mimeType.startsWith("audio")) {
+            type = MediaMetadata.MEDIA_TYPE_MUSIC_TRACK;
+        } else if (mimeType.startsWith("video")) {
+            type = MediaMetadata.MEDIA_TYPE_MOVIE;
+        } else {
+            throw new IllegalArgumentException("unsupported mime type: " + mimeType);
+        }
     }
 }

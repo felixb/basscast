@@ -15,24 +15,19 @@
             android:id="@+id/title"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="title"/>
+            android:hint="@string/title_hint"/>
 
     <EditText
             android:id="@+id/url"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="url"/>
+            android:inputType="textUri"
+            android:hint="@string/url_hint"/>
 
     <EditText
             android:id="@+id/mimeType"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="mime type"/>
-
-    <EditText
-            android:id="@+id/type"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="type"/>
+            android:hint="@string/mimeType_hint"/>
 
 </LinearLayout>
