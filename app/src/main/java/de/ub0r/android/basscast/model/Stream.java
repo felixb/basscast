@@ -61,6 +61,13 @@ public class Stream {
         this.mimeType = bundle.getString(StreamsTable.FIELD_MIME_TYPE);
     }
 
+    public Stream(final Uri uri) {
+        this.url = uri.getScheme() + "://" + uri.getHost() + uri.getPath();
+        this.title = uri.getQueryParameter(StreamsTable.FIELD_TITLE);
+        this.mimeType = uri.getQueryParameter(StreamsTable.FIELD_MIME_TYPE);
+        parseMimeType();
+    }
+
     public MediaInfo getMediaMetadata() {
         MediaMetadata mediaMetadata = new MediaMetadata(type);
         mediaMetadata.putString(MediaMetadata.KEY_TITLE, title);
@@ -85,6 +92,13 @@ public class Stream {
         b.putInt(StreamsTable.FIELD_TYPE, type);
         b.putString(StreamsTable.FIELD_MIME_TYPE, mimeType);
         return b;
+    }
+
+    public Uri toSharableUri() {
+        return Uri.parse(url).buildUpon()
+                .appendQueryParameter(StreamsTable.FIELD_MIME_TYPE, mimeType)
+                .appendQueryParameter(StreamsTable.FIELD_TITLE, title)
+                .build();
     }
 
     @Override
