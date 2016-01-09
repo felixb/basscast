@@ -126,6 +126,8 @@ public class Stream {
             type = MediaMetadata.MEDIA_TYPE_MUSIC_TRACK;
         } else if (mimeType.startsWith("video")) {
             type = MediaMetadata.MEDIA_TYPE_MOVIE;
+        } else if (mimeType.startsWith("text")) {
+            type = -1;
         } else {
             throw new InputError("unsupported mime type: " + mimeType,
                     R.string.unsupported_mime_type);
