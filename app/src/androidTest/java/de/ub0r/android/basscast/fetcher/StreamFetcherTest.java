@@ -23,7 +23,13 @@ public class StreamFetcherTest extends AndroidTestCase {
         final MockWebServer server = new MockWebServer();
 
         server.enqueue(new MockResponse()
-                .setBody("<html><body><a href=\"/listOfStreams/example-stream\">stream me up!</a></body></html>")
+                .setBody("<html><body>here is a list: " +
+                        "link to some other page: <a href=\"http://example.org\">example.org</a>" +
+                        "<ul>" +
+                        "<li><a href=\"/listOfStreams/example-stream.mp4\">stream me up!</a></li>" +
+                        "<li><a href=\"some-other-stream.mp3\">music baby</a></li>" +
+                        "</ul>" +
+                        "</body></html>")
                 .setHeader("Content-Type", "text/html"));
 
         server.start();
@@ -35,7 +41,17 @@ public class StreamFetcherTest extends AndroidTestCase {
         final List<Stream> streams = fetcher.fetch(baseStream);
 
         assertNotNull(streams);
-        //TODO   assertEquals(1, streams.size());
+        assertEquals(2, streams.size());
+
+        Stream stream = streams.get(0);
+        assertEquals("stream me up!", stream.title);
+        assertEquals(baseUrl.toString() + "example-stream.mp4", stream.url);
+        assertEquals("video/mp4", stream.mimeType);
+
+        stream = streams.get(1);
+        assertEquals("music baby", stream.title);
+        assertEquals(baseUrl.toString() + "some-other-stream.mp3", stream.url);
+        assertEquals("audio/mp3", stream.mimeType);
 
         server.shutdown();
     }
