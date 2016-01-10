@@ -6,6 +6,7 @@ import com.google.android.gms.cast.MediaMetadata;
 import android.content.ContentUris;
 import android.net.Uri;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.text.TextUtils;
 
 import ckm.simple.sql_provider.annotation.SimpleSQLColumn;
@@ -27,6 +28,9 @@ public class Stream {
 
     @SimpleSQLColumn("parent_id")
     public long parentId = -1;
+
+    @SimpleSQLColumn("inserted")
+    public long inserted = System.currentTimeMillis();
 
     @SimpleSQLColumn("url")
     public String url;
@@ -51,10 +55,21 @@ public class Stream {
         parseMimeType();
     }
 
+    public Stream(@NonNull final Stream parentStream, final String url, final String title, final String mimeType) {
+        this(url, title, mimeType);
+        if (parentStream.baseId < 0) {
+            this.baseId = parentStream.id;
+        } else {
+            this.baseId = parentStream.baseId;
+        }
+        this.parentId = parentStream.id;
+    }
+
     public Stream(final Bundle bundle) {
         this.id = bundle.getLong(StreamsTable.FIELD__ID, -1);
         this.baseId = bundle.getLong(StreamsTable.FIELD_BASE_ID, -1);
         this.parentId = bundle.getLong(StreamsTable.FIELD_PARENT_ID, -1);
+        this.inserted = bundle.getLong(StreamsTable.FIELD_INSERTED, System.currentTimeMillis());
         this.url = bundle.getString(StreamsTable.FIELD_URL);
         this.title = bundle.getString(StreamsTable.FIELD_TITLE);
         this.type = bundle.getInt(StreamsTable.FIELD_TYPE);
@@ -87,6 +102,7 @@ public class Stream {
         b.putLong(StreamsTable.FIELD__ID, id);
         b.putLong(StreamsTable.FIELD_BASE_ID, baseId);
         b.putLong(StreamsTable.FIELD_PARENT_ID, parentId);
+        b.putLong(StreamsTable.FIELD_INSERTED, inserted);
         b.putString(StreamsTable.FIELD_URL, url);
         b.putString(StreamsTable.FIELD_TITLE, title);
         b.putInt(StreamsTable.FIELD_TYPE, type);
