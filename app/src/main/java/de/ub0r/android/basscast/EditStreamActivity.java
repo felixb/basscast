@@ -6,6 +6,10 @@ import android.content.ContentValues;
 import android.content.Intent;
 import android.database.Cursor;
 import android.net.Uri;
+import android.nfc.NdefMessage;
+import android.nfc.NdefRecord;
+import android.nfc.NfcAdapter;
+import android.nfc.NfcEvent;
 import android.os.Bundle;
 import android.os.PersistableBundle;
 import android.support.v7.app.AppCompatActivity;
@@ -25,7 +29,8 @@ import de.ub0r.android.basscast.model.MimeType;
 import de.ub0r.android.basscast.model.Stream;
 import de.ub0r.android.basscast.model.StreamsTable;
 
-public class EditStreamActivity extends AppCompatActivity {
+public class EditStreamActivity extends AppCompatActivity implements
+        NfcAdapter.CreateNdefMessageCallback {
 
     private static final String TAG = "EditStreamActivity";
 
@@ -60,6 +65,11 @@ public class EditStreamActivity extends AppCompatActivity {
             throw new IllegalArgumentException("Illegal ACTION: " + getIntent().getAction());
         }
 
+        NfcAdapter nfcAdapter = NfcAdapter.getDefaultAdapter(this);
+        if (nfcAdapter != null) {
+            nfcAdapter.setNdefPushMessageCallback(this, this);
+        }
+
         restoreViewsFromStream();
     }
 
@@ -92,6 +102,14 @@ public class EditStreamActivity extends AppCompatActivity {
             default:
                 return super.onOptionsItemSelected(item);
         }
+    }
+
+    @Override
+    public NdefMessage createNdefMessage(final NfcEvent nfcEvent) {
+        storeStreamFromViews();
+        return new NdefMessage(new NdefRecord[]{
+                NdefRecord.createUri(mStream.toSharableUri()),
+                NdefRecord.createApplicationRecord(BuildConfig.APPLICATION_ID)});
     }
 
     private void saveAndFinish() {
