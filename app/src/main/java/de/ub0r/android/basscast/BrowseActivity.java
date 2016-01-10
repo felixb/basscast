@@ -14,12 +14,14 @@ import com.google.android.gms.common.api.Status;
 
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
+import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.VisibleForTesting;
 import android.support.design.widget.FloatingActionButton;
+import android.support.v4.app.FragmentTransaction;
 import android.support.v4.view.MenuItemCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.app.MediaRouteActionProvider;
@@ -41,11 +43,14 @@ import butterknife.Bind;
 import butterknife.BindDimen;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
+import de.ub0r.android.basscast.fetcher.FetchTask;
+import de.ub0r.android.basscast.fetcher.StreamFetcher;
 import de.ub0r.android.basscast.model.Stream;
 
 public class BrowseActivity extends AppCompatActivity {
 
     interface OnStateChangeListener {
+
         void onStateChange();
     }
 
@@ -178,30 +183,6 @@ public class BrowseActivity extends AppCompatActivity {
                         });
     }
 
-    void loadStream(final Stream stream) {
-        Toast.makeText(this, "Loading stream: " + stream.title, Toast.LENGTH_LONG).show();
-        MediaInfo mediaInfo = stream.getMediaMetadata();
-
-        try {
-            mRemoteMediaPlayer
-                    .load(mApiClient, mediaInfo, true)
-                    .setResultCallback(new ResultCallback<RemoteMediaPlayer.MediaChannelResult>() {
-                        @Override
-                        public void onResult(
-                                @NonNull final RemoteMediaPlayer.MediaChannelResult result) {
-                            if (result.getStatus().isSuccess()) {
-                                Log.d(TAG, "Media loaded successfully");
-                            }
-                        }
-                    });
-        } catch (IllegalStateException e) {
-            Log.e(TAG, "Problem occurred with media during loading", e);
-        } catch (Exception e) {
-            Log.e(TAG, "Problem opening media during loading", e);
-        }
-    }
-
-
     private class ConnectionFailedListener implements
             GoogleApiClient.OnConnectionFailedListener {
 
@@ -234,6 +215,11 @@ public class BrowseActivity extends AppCompatActivity {
     private GoogleApiClient mApiClient;
 
     private OnStateChangeListener mOnStateChangeListener;
+
+    private StreamFetcher mFetcher;
+
+    @Bind(R.id.toolbar)
+    Toolbar mToolbar;
 
     private Cast.Listener mCastClientListener = new Cast.Listener() {
         @Override
@@ -310,13 +296,13 @@ public class BrowseActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_browse);
         ButterKnife.bind(this);
-
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
-        setSupportActionBar(toolbar);
+        setSupportActionBar(mToolbar);
 
         SharedPreferences preferences = getSharedPreferences(PREFS_FILE_CHROMECAST, MODE_PRIVATE);
         mRouteId = preferences.getString(PREFS_ROUTE_ID, null);
         mSessionId = preferences.getString(PREFS_SESSION_ID, null);
+
+        mFetcher = new StreamFetcher(this);
 
         mFloatingActionButtonView.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -475,6 +461,73 @@ public class BrowseActivity extends AppCompatActivity {
         if (mOnStateChangeListener != null) {
             mOnStateChangeListener.onStateChange();
         }
+    }
+
+    @SuppressLint("PrivateResource")
+    public void setStreamInfo(final Stream stream) {
+        if (stream == null) {
+            mToolbar.setSubtitle(null);
+            mToolbar.setNavigationIcon(null);
+            mToolbar.setNavigationOnClickListener(null);
+        } else {
+            mToolbar.setSubtitle(stream.title);
+            mToolbar.setNavigationIcon(R.drawable.abc_ic_ab_back_mtrl_am_alpha);
+            mToolbar.setNavigationOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(final View view) {
+                    Intent intent = new Intent(BrowseActivity.this, BrowseActivity.class);
+                    intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                    startActivity(intent);
+                }
+            });
+        }
+    }
+
+    public void onStreamClick(final Stream stream) {
+        if (stream.isMedia()) {
+            editStream(stream); // TODO playStream(stream)
+        } else {
+            showStream(stream);
+        }
+    }
+
+    void playStream(final Stream stream) {
+        Toast.makeText(this, "Playing stream: " + stream.title, Toast.LENGTH_LONG).show();
+        MediaInfo mediaInfo = stream.getMediaMetadata();
+
+        try {
+            mRemoteMediaPlayer
+                    .load(mApiClient, mediaInfo, true)
+                    .setResultCallback(new ResultCallback<RemoteMediaPlayer.MediaChannelResult>() {
+                        @Override
+                        public void onResult(
+                                @NonNull final RemoteMediaPlayer.MediaChannelResult result) {
+                            if (result.getStatus().isSuccess()) {
+                                Log.d(TAG, "Media loaded successfully");
+                            }
+                        }
+                    });
+        } catch (IllegalStateException e) {
+            Log.e(TAG, "Problem occurred with media during loading", e);
+        } catch (Exception e) {
+            Log.e(TAG, "Problem opening media during loading", e);
+        }
+    }
+
+    private void editStream(final Stream stream) {
+        startActivity(new Intent(Intent.ACTION_EDIT, stream.getUri(),
+                this, EditStreamActivity.class));
+    }
+
+    private void showStream(final Stream parentStream) {
+        // FIXME basFragment is visible during animation
+        BrowseFragment fragment = BrowseFragment.getInstance(parentStream);
+        getSupportFragmentManager().beginTransaction()
+                .replace(R.id.fragment_container, fragment)
+                .setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN)
+                .addToBackStack(null)
+                .commit();
+        new FetchTask(mFetcher, parentStream, fragment).execute((Void[]) null);
     }
 
     private void updateControlViews(final boolean showAnimations) {

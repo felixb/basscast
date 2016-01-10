@@ -37,6 +37,11 @@ public class BassCastApplication extends Application {
                     "bassdrive",
                     "audio/mpeg"
             ), false));
+            cr.insert(StreamsTable.CONTENT_URI, StreamsTable.getContentValues(new Stream(
+                    "archives.bassdrivearchive.com",
+                    "bassdrive archives",
+                    "text/html"
+            ), false));
         }
     }
 }

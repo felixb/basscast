@@ -1,10 +1,7 @@
 package de.ub0r.android.basscast.fetcher;
 
 import android.database.Cursor;
-import android.net.Uri;
 import android.test.AndroidTestCase;
-
-import com.google.android.gms.cast.MediaMetadata;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -41,7 +38,7 @@ public class StreamFetcherTest extends AndroidTestCase {
                         "<li><a href=\"some-other-stream.mp3\">music baby</a></li>" +
                         "</ul>" +
                         "</body></html>")
-                .setHeader("Content-Type", "text/html"));
+                .setHeader("Content-Type", "text/html;charset=utf8"));
 
         server.start();
 

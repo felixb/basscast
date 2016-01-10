@@ -55,7 +55,8 @@ public class Stream {
         parseMimeType();
     }
 
-    public Stream(@NonNull final Stream parentStream, final String url, final String title, final String mimeType) {
+    public Stream(@NonNull final Stream parentStream, final String url, final String title,
+            final String mimeType) {
         this(url, title, mimeType);
         if (parentStream.baseId < 0) {
             this.baseId = parentStream.id;
@@ -148,5 +149,9 @@ public class Stream {
             throw new InputError("unsupported mime type: " + mimeType,
                     R.string.unsupported_mime_type);
         }
+    }
+
+    public boolean isMedia() {
+        return type >= 0;
     }
 }

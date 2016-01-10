@@ -22,12 +22,12 @@ public class BrowseFragmentTest extends ActivityInstrumentationTestCase2<BrowseA
     protected void tearDown() throws Exception {
         // reset streams
         final ContentValues values = new ContentValues();
-        values.put(StreamsTable.FIELD_BASE_ID, -1);
+        values.put(StreamsTable.FIELD_PARENT_ID, -1);
         getInstrumentation().getContext().getContentResolver()
                 .update(
                         StreamsTable.CONTENT_URI,
                         values,
-                        StreamsTable.FIELD_BASE_ID + "=?",
+                        StreamsTable.FIELD_PARENT_ID + "=?",
                         new String[]{"9001"});
 
         // remove all test streams
@@ -41,12 +41,12 @@ public class BrowseFragmentTest extends ActivityInstrumentationTestCase2<BrowseA
     public void testShowsEmptyView() {
         // hide all streams
         final ContentValues values = new ContentValues();
-        values.put(StreamsTable.FIELD_BASE_ID, 9001);
+        values.put(StreamsTable.FIELD_PARENT_ID, 9001);
         getInstrumentation().getContext().getContentResolver()
                 .update(
                         StreamsTable.CONTENT_URI,
                         values,
-                        StreamsTable.FIELD_BASE_ID + "=?",
+                        StreamsTable.FIELD_PARENT_ID + "=?",
                         new String[]{"-1"});
 
         BrowseActivity activity = getActivity();

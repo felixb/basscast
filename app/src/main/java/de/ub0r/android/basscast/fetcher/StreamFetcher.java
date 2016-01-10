@@ -1,16 +1,15 @@
 package de.ub0r.android.basscast.fetcher;
 
-import android.content.ContentResolver;
-import android.content.Context;
-import android.database.Cursor;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
-import android.util.Log;
-
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
+
+import android.content.ContentResolver;
+import android.content.Context;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
+import android.util.Log;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -44,6 +43,7 @@ public class StreamFetcher {
     }
 
     private final Context mContext;
+
     private final OkHttpClient mHttpClient;
 
 
@@ -119,26 +119,34 @@ public class StreamFetcher {
     }
 
     public List<Stream> fetch(@NonNull final Stream parent) throws IOException {
+        Log.d(TAG, "fetch(" + parent.url + ")");
+
         final ArrayList<Stream> list = new ArrayList<>();
 
         final Response response = mHttpClient.newCall(new Request.Builder()
                 .url(parent.url)
                 .build()).execute();
         String mimeType = response.header("Content-Type");
-        if (mimeType != null && "text/html".equals(mimeType)) {
+        Log.d(TAG, "fetch(): Response Content-Type: " + mimeType);
+        if (mimeType != null && mimeType.startsWith("text/html")) {
             final Document doc = Jsoup.parse(response.body().string(), parent.url);
             Elements elements = doc.select("a[href]");
+            Log.d(TAG, "fetch(): Found " + elements.size() + " links");
             for (Element element : elements) {
                 String url = element.attr("abs:href");
                 if (url.startsWith(parent.url)) {
                     try {
+                        Log.d(TAG, "fetch(): Adding " + url + " to results.");
                         list.add(new Stream(parent, url, element.text(), fetchMimeType(url)));
                     } catch (IllegalArgumentException e) {
-                        Log.w(TAG, "Ignoring invalid stream: " + e);
+                        Log.w(TAG, "fetch(): Ignoring invalid stream: " + e);
                     }
+                } else {
+                    Log.d(TAG, "fetch(): Ignoring URL: " + url);
                 }
             }
         }
+        Log.d(TAG, "fetch(): returning " + list.size() + " streams");
         return list;
     }
 
@@ -155,7 +163,7 @@ public class StreamFetcher {
 
     @NonNull
     private List<Stream> queryStreamsByParent(@NonNull final ContentResolver cr,
-                                              @NonNull final Stream parent) {
+            @NonNull final Stream parent) {
         return StreamsTable.getRows(cr.query(
                         StreamsTable.CONTENT_URI,
                         null,

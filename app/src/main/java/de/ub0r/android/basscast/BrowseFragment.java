@@ -1,7 +1,6 @@
 package de.ub0r.android.basscast;
 
 import android.content.Context;
-import android.content.Intent;
 import android.database.Cursor;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
@@ -20,11 +19,13 @@ import android.widget.TextView;
 import butterknife.Bind;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
+import de.ub0r.android.basscast.fetcher.FetchTask;
 import de.ub0r.android.basscast.model.Stream;
 import de.ub0r.android.basscast.model.StreamsTable;
 
 public class BrowseFragment extends Fragment
-        implements LoaderManager.LoaderCallbacks<Cursor>, BrowseActivity.OnStateChangeListener {
+        implements LoaderManager.LoaderCallbacks<Cursor>, BrowseActivity.OnStateChangeListener,
+        FetchTask.FetcherCallbacks {
 
     class StreamHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
 
@@ -47,14 +48,12 @@ public class BrowseFragment extends Fragment
 
         @Override
         public void onClick(final View itemView) {
-            getActivity().startActivity(
-                    new Intent(Intent.ACTION_EDIT, mStream.getUri(), getContext(),
-                            EditStreamActivity.class));
+            getBrowseActivity().onStreamClick(mStream);
         }
 
         @OnClick(R.id.action_play)
         void onPlayClick() {
-            getBrowseActivity().loadStream(mStream);
+            getBrowseActivity().playStream(mStream);
         }
 
         public void bindCursor(final Cursor cursor) {
@@ -65,7 +64,8 @@ public class BrowseFragment extends Fragment
             mStream = stream;
             mTitleView.setText(stream.title);
             mUrlView.setText(stream.url);
-            mPlayButton.setVisibility(isApplicationStarted() ? View.VISIBLE : View.GONE);
+            mPlayButton.setVisibility(isApplicationStarted() && mStream.isMedia() ?
+                    View.VISIBLE : View.GONE);
         }
     }
 
@@ -92,7 +92,7 @@ public class BrowseFragment extends Fragment
 
     private static final String TAG = "BrowseFragment";
 
-    private static final int LOADER_BROWSE = 1;
+    private static final String ARG_PARENT_STREAM = "PARENT_STREAM";
 
     @Bind(android.R.id.list)
     RecyclerView mRecyclerView;
@@ -100,7 +100,19 @@ public class BrowseFragment extends Fragment
     @Bind(android.R.id.empty)
     View mEmptyView;
 
+    private Stream mParentStream;
+
     private StreamAdapter mAdapter;
+
+    public static BrowseFragment getInstance(final Stream parentStream) {
+        BrowseFragment f = new BrowseFragment();
+        if (parentStream != null) {
+            Bundle args = new Bundle();
+            args.putBundle(ARG_PARENT_STREAM, parentStream.toBundle());
+            f.setArguments(args);
+        }
+        return f;
+    }
 
     public BrowseFragment() {
     }
@@ -110,8 +122,18 @@ public class BrowseFragment extends Fragment
     }
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-            Bundle savedInstanceState) {
+    public void onCreate(final Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        Bundle args = getArguments();
+        if (args != null && args.containsKey(ARG_PARENT_STREAM)) {
+            mParentStream = new Stream(args.getBundle(ARG_PARENT_STREAM));
+        }
+    }
+
+    @Override
+    public View onCreateView(final LayoutInflater inflater,
+            final ViewGroup container,
+            final Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_browse, container, false);
         ButterKnife.bind(this, view);
 
@@ -123,35 +145,37 @@ public class BrowseFragment extends Fragment
     }
 
     @Override
-    public void onAttach(Context context) {
-        super.onAttach(context);
-        getBrowseActivity().setOnStateChangeListener(this);
-    }
-
-    @Override
-    public void onDetach() {
-        getBrowseActivity().setOnStateChangeListener(null);
-        super.onDetach();
-    }
-
-    @Override
     public void onResume() {
         super.onResume();
-        getLoaderManager().restartLoader(LOADER_BROWSE, null, this);
+        getBrowseActivity().setOnStateChangeListener(this);
+        getBrowseActivity().setStreamInfo(mParentStream);
+        restartLoader();
+    }
+
+    @Override
+    public void onPause() {
+        getBrowseActivity().setOnStateChangeListener(null);
+        super.onPause();
+    }
+
+    public void restartLoader() {
+        if (getActivity() != null) {
+            getLoaderManager().restartLoader(
+                    mParentStream == null ? -1 : (int) mParentStream.id, null, this);
+        }
     }
 
     @Override
     public void onDestroyView() {
-        getBrowseActivity().setOnStateChangeListener(null);
         ButterKnife.unbind(this);
         super.onDestroyView();
     }
 
-
     @Override
     public Loader<Cursor> onCreateLoader(final int id, final Bundle args) {
         return new CursorLoader(getActivity(), StreamsTable.CONTENT_URI, null,
-                StreamsTable.FIELD_BASE_ID + "<0", null, StreamsTable.FIELD_TITLE + " ASC");
+                StreamsTable.FIELD_PARENT_ID + "=?", new String[]{String.valueOf(id)},
+                StreamsTable.FIELD_TITLE + " ASC");
     }
 
     @Override
@@ -172,6 +196,21 @@ public class BrowseFragment extends Fragment
         if (mAdapter != null) {
             mAdapter.notifyDataSetChanged();
         }
+    }
+
+    @Override
+    public void onFetchStarted() {
+        // TODO update UI if empty list
+    }
+
+    @Override
+    public void onFetchFinished() {
+        restartLoader();
+    }
+
+    @Override
+    public void onFetchFailed() {
+        // TODO
     }
 
     private boolean isApplicationStarted() {
