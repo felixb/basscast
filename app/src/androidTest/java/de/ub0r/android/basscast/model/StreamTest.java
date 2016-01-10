@@ -1,6 +1,7 @@
 package de.ub0r.android.basscast.model;
 
 import android.net.Uri;
+import android.nfc.NdefRecord;
 import android.test.AndroidTestCase;
 
 /**
@@ -62,5 +63,22 @@ public class StreamTest extends AndroidTestCase {
         assertEquals(s.getMimeType(), newStream.getMimeType());
 
         assertEquals(u, newStream.toSharableUri());
+    }
+
+    public void testStreamToNdefRecord() {
+        final Stream s = new Stream();
+        s.setId(5);
+        s.setTitle("some stream");
+        s.setUrl("http://example.com/stream");
+        s.setMimeType("audio/mp3");
+
+        NdefRecord record = s.toNdefRecord();
+        final Stream newStream = new Stream(record);
+
+        assertEquals(s.getTitle(), newStream.getTitle());
+        assertEquals(s.getUrl(), newStream.getUrl());
+        assertEquals(s.getMimeType(), newStream.getMimeType());
+
+        assertEquals(record, newStream.toNdefRecord());
     }
 }

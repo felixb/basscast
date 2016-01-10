@@ -5,6 +5,10 @@ import android.content.ContentUris;
 import android.content.Intent;
 import android.database.Cursor;
 import android.net.Uri;
+import android.nfc.NdefMessage;
+import android.nfc.NdefRecord;
+import android.nfc.NfcAdapter;
+import android.os.Bundle;
 import android.test.ActivityInstrumentationTestCase2;
 import android.view.View;
 
@@ -51,6 +55,36 @@ public class EditStreamActivityTest extends ActivityInstrumentationTestCase2<Edi
 
         assertEquals("", getActivity().mTitleView.getText().toString());
         assertEquals("", getActivity().mUrlView.getText().toString());
+    }
+
+    public void testLoadStreamFromNdefMessage() {
+        final Stream stream = new Stream(TEST_URL, "nfc transmitted stream", new MimeType("text/html"));
+        final Intent intent = new Intent(NfcAdapter.ACTION_NDEF_DISCOVERED);
+        final NdefMessage msg = new NdefMessage(new NdefRecord[]{
+                stream.toNdefRecord(),
+                NdefRecord.createApplicationRecord(BuildConfig.APPLICATION_ID)});
+        final Bundle extras = new Bundle();
+        extras.putParcelableArray(NfcAdapter.EXTRA_NDEF_MESSAGES, new NdefMessage[]{msg});
+        intent.putExtras(extras);
+        setActivityIntent(intent);
+
+        assertEquals(TEST_URL, getActivity().mUrlView.getText().toString());
+        assertEquals("nfc transmitted stream", getActivity().mTitleView.getText().toString());
+    }
+
+    public void testLoadStreamFromNdefMessageWithAARFirst() {
+        final Stream stream = new Stream(TEST_URL, "nfc transmitted stream", new MimeType("text/html"));
+        final Intent intent = new Intent(NfcAdapter.ACTION_NDEF_DISCOVERED);
+        final NdefMessage msg = new NdefMessage(new NdefRecord[]{
+                NdefRecord.createApplicationRecord(BuildConfig.APPLICATION_ID),
+                stream.toNdefRecord()});
+        final Bundle extras = new Bundle();
+        extras.putParcelableArray(NfcAdapter.EXTRA_NDEF_MESSAGES, new NdefMessage[]{msg});
+        intent.putExtras(extras);
+        setActivityIntent(intent);
+
+        assertEquals(TEST_URL, getActivity().mUrlView.getText().toString());
+        assertEquals("nfc transmitted stream", getActivity().mTitleView.getText().toString());
     }
 
     @SuppressWarnings("ConstantConditions")

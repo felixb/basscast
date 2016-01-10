@@ -27,12 +27,12 @@
                 android:name=".EditStreamActivity"
                 android:parentActivityName=".BrowseActivity">
             <intent-filter>
-                <action android:name="android.nfc.action.NDEF_DISCOVERED"/>
-                <!--
-                <category android:name="android.intent.category.DEFAULT"/>
-                <data android:scheme="http"/>
-                <data android:scheme="https"/>
-                -->
+                <action android:name="android.nfc.action.NDEF_DISCOVERED" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data
+                    android:host="ext"
+                    android:pathPrefix="/de.ub0r.android.basscast:stream"
+                    android:scheme="vnd.android.nfc" />
             </intent-filter>
         </activity>
 

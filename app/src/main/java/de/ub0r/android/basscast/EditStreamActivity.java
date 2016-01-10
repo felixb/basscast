@@ -1,7 +1,6 @@
 package de.ub0r.android.basscast;
 
 import android.app.AlertDialog;
-import android.app.Dialog;
 import android.content.ContentValues;
 import android.content.Intent;
 import android.database.Cursor;
@@ -11,7 +10,9 @@ import android.nfc.NdefRecord;
 import android.nfc.NfcAdapter;
 import android.nfc.NfcEvent;
 import android.os.Bundle;
+import android.os.Parcelable;
 import android.os.PersistableBundle;
+import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.text.TextUtils;
 import android.util.Log;
@@ -54,15 +55,23 @@ public class EditStreamActivity extends AppCompatActivity implements
 
         mFetcher = new StreamFetcher(this);
 
+        final String action = getIntent().getAction();
+        final Uri data = getIntent().getData();
         if (savedInstanceState != null) {
             mStream = new Stream(savedInstanceState.getBundle(ARG_STREAM));
-        } else if (Intent.ACTION_EDIT.equals(getIntent().getAction())
-                && getIntent().getData() != null) {
-            mStream = fetchStream(getIntent().getData());
-        } else if (Intent.ACTION_INSERT.equals(getIntent().getAction())) {
+        } else if (Intent.ACTION_EDIT.equals(action) && data != null) {
+            mStream = fetchStream(data);
+        } else if (Intent.ACTION_INSERT.equals(action)) {
             mStream = new Stream();
+        } else if (NfcAdapter.ACTION_NDEF_DISCOVERED.equals(action)) {
+            try {
+                parseNdefMessage(getIntent());
+            } catch (IllegalArgumentException e) {
+                Log.e(TAG, "Unable to load stream from NDEF message", e);
+                mStream = new Stream();
+            }
         } else {
-            throw new IllegalArgumentException("Illegal ACTION: " + getIntent().getAction());
+            throw new IllegalArgumentException("Illegal ACTION: " + action);
         }
 
         NfcAdapter nfcAdapter = NfcAdapter.getDefaultAdapter(this);
@@ -107,8 +116,13 @@ public class EditStreamActivity extends AppCompatActivity implements
     @Override
     public NdefMessage createNdefMessage(final NfcEvent nfcEvent) {
         storeStreamFromViews();
+        return getNdefMessage();
+    }
+
+    @NonNull
+    private NdefMessage getNdefMessage() {
         return new NdefMessage(new NdefRecord[]{
-                NdefRecord.createUri(mStream.toSharableUri()),
+                mStream.toNdefRecord(),
                 NdefRecord.createApplicationRecord(BuildConfig.APPLICATION_ID)});
     }
 
@@ -241,5 +255,24 @@ public class EditStreamActivity extends AppCompatActivity implements
             throw new IllegalArgumentException("Unknown Stream: " + uri);
         }
         throw new IllegalArgumentException("Unable to fetch Stream");
+    }
+
+    private void parseNdefMessage(final Intent intent) {
+        Parcelable[] rawMsgs = intent.getParcelableArrayExtra(
+                NfcAdapter.EXTRA_NDEF_MESSAGES);
+        Log.d(TAG, "#msgs: " + rawMsgs.length);
+        for (Parcelable rawMsg : rawMsgs) {
+            NdefMessage msg = (NdefMessage) rawMsg;
+            Log.d(TAG, "#records: " + msg.getRecords().length);
+            for (NdefRecord record : msg.getRecords()) {
+                try {
+                    mStream = new Stream(record);
+                    return;
+                } catch (Exception e) {
+                    Log.e(TAG, "NDEF record is not a stream", e);
+                }
+            }
+        }
+        throw new IllegalArgumentException("Invalid NDEF message");
     }
 }

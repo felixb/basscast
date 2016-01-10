@@ -1,15 +1,19 @@
 package de.ub0r.android.basscast.model;
 
-import com.google.android.gms.cast.MediaInfo;
-import com.google.android.gms.cast.MediaMetadata;
-
 import android.content.ContentUris;
 import android.net.Uri;
+import android.nfc.NdefRecord;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 
+import com.google.android.gms.cast.MediaInfo;
+import com.google.android.gms.cast.MediaMetadata;
+
+import java.nio.charset.Charset;
+
 import ckm.simple.sql_provider.annotation.SimpleSQLColumn;
 import ckm.simple.sql_provider.annotation.SimpleSQLTable;
+import de.ub0r.android.basscast.BuildConfig;
 
 /**
  * @author flx
@@ -56,7 +60,7 @@ public class Stream {
     }
 
     public Stream(@NonNull final Stream parentStream, final String url, final String title,
-            final MimeType mimeType) {
+                  final MimeType mimeType) {
         this(url, title, mimeType);
         if (parentStream.baseId < 0) {
             this.baseId = parentStream.id;
@@ -83,6 +87,30 @@ public class Stream {
         this.url = uri.getScheme() + "://" + uri.getHost() + uri.getPath();
         this.title = uri.getQueryParameter(StreamsTable.FIELD_TITLE);
         setMimeType(uri.getQueryParameter(StreamsTable.FIELD_MIME_TYPE));
+    }
+
+    public Stream(final NdefRecord record) {
+        this(Uri.parse(new String(parseNdefRecord(record), Charset.forName("UTF-8"))));
+    }
+
+    private static byte[] parseNdefRecord(final NdefRecord record) {
+        if (record.getTnf() != NdefRecord.TNF_EXTERNAL_TYPE) {
+            throw new IllegalArgumentException("Invalid TNF: " + record.getTnf());
+        }
+        final byte[] type = record.getType();
+        if (type == null) {
+            throw new NullPointerException("Type must not be null");
+        }
+        final String typeString = new String(type);
+        if (!typeString.equalsIgnoreCase(BuildConfig.APPLICATION_ID + ":stream")) {
+            throw new IllegalArgumentException("Invalid type: " + typeString);
+        }
+
+        final byte[] bytes = record.getPayload();
+        if (bytes == null) {
+            throw new NullPointerException("Payload must not be null");
+        }
+        return bytes;
     }
 
     public long getId() {
@@ -195,12 +223,23 @@ public class Stream {
                 .build();
     }
 
+    public NdefRecord toNdefRecord() {
+        return NdefRecord.createExternal(
+                BuildConfig.APPLICATION_ID,
+                "stream",
+                toSharableUri()
+                        .toString()
+                        .getBytes(Charset.forName("UTF-8")));
+    }
+
     @Override
     public String toString() {
         return "Stream: " + toBundle();
     }
 
-    public boolean isBaseStream() { return parentId < 0; }
+    public boolean isBaseStream() {
+        return parentId < 0;
+    }
 
     public boolean isPlayable() {
         return mMimeType != null && mMimeType.isPlayable();
