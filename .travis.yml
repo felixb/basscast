@@ -15,13 +15,13 @@ android:
 
     # Specify at least one system image,
     # if you need to run emulator(s) during your tests
-    - sys-img-x86_64-addon-google_apis-google-23
+    - sys-img-armeabi-v7a-addon-google_apis-google-23
   licenses:
     - 'android-sdk-license-.+'
     - 'google-gdk-license-.+'
 
 before_script:
-  - echo no | android create avd --force -n test -t 'Google Inc.:Google APIs:23' --abi google_apis/x86_64
+  - echo no | android create avd --force -n test -t 'Google Inc.:Google APIs:23' --abi google_apis/armeabi-v7a
   - emulator -avd test -no-audio -no-window &
   - android-wait-for-emulator
   - adb shell input keyevent 82 &
