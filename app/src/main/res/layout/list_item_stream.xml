@@ -6,14 +6,14 @@
         android:background="@drawable/list_selector">
 
     <ImageButton
-            android:id="@+id/action_play"
+            android:id="@+id/action_context_menu"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_alignParentTop="true"
+            android:layout_centerVertical="true"
             android:layout_alignParentRight="true"
             android:layout_alignParentEnd="true"
-            android:src="@drawable/ic_av_play_ripple"
-            android:background="@android:color/transparent"
+            android:src="@drawable/ic_navigation_more_vert"
+            android:background="@drawable/button_selector"
             android:text="@string/action_play"/>
 
     <TextView
@@ -22,8 +22,8 @@
             android:layout_height="wrap_content"
             android:layout_alignParentLeft="true"
             android:layout_alignParentStart="true"
-            android:layout_toLeftOf="@id/action_play"
-            android:layout_toStartOf="@id/action_play"
+            android:layout_toLeftOf="@id/action_context_menu"
+            android:layout_toStartOf="@id/action_context_menu"
             android:textAppearance="?android:textAppearanceLarge"
             android:text="A fancy stream"/>
 
@@ -34,8 +34,8 @@
             android:layout_below="@+id/title"
             android:layout_alignParentLeft="true"
             android:layout_alignParentStart="true"
-            android:layout_toLeftOf="@id/action_play"
-            android:layout_toStartOf="@id/action_play"
+            android:layout_toLeftOf="@id/action_context_menu"
+            android:layout_toStartOf="@id/action_context_menu"
             android:textAppearance="?android:textAppearanceSmall"
             android:ellipsize="middle"
             android:maxLines="2"

@@ -492,7 +492,7 @@ public class BrowseActivity extends AppCompatActivity {
 
     public void onStreamClick(final Stream stream) {
         if (stream.isMedia()) {
-            editStream(stream); // TODO playStream(stream)
+            playStream(stream);
         } else {
             showStream(stream);
         }
@@ -519,11 +519,6 @@ public class BrowseActivity extends AppCompatActivity {
         } catch (Exception e) {
             Log.e(TAG, "Problem opening media during loading", e);
         }
-    }
-
-    private void editStream(final Stream stream) {
-        startActivity(new Intent(Intent.ACTION_EDIT, stream.getUri(),
-                this, EditStreamActivity.class));
     }
 
     private void showStream(final Stream parentStream) {

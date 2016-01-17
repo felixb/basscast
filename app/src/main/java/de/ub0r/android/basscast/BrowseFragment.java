@@ -11,9 +11,11 @@ import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageButton;
+import android.widget.PopupMenu;
 import android.widget.TextView;
 
 import butterknife.Bind;
@@ -27,7 +29,8 @@ public class BrowseFragment extends Fragment
         implements LoaderManager.LoaderCallbacks<Cursor>, BrowseActivity.OnStateChangeListener,
         FetchTask.FetcherCallbacks {
 
-    class StreamHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
+    class StreamHolder extends RecyclerView.ViewHolder implements View.OnClickListener,
+            PopupMenu.OnMenuItemClickListener {
 
         private Stream mStream;
 
@@ -37,8 +40,8 @@ public class BrowseFragment extends Fragment
         @Bind(R.id.url)
         TextView mUrlView;
 
-        @Bind(R.id.action_play)
-        ImageButton mPlayButton;
+        @Bind(R.id.action_context_menu)
+        ImageButton mContextButton;
 
         public StreamHolder(final View itemView) {
             super(itemView);
@@ -51,9 +54,27 @@ public class BrowseFragment extends Fragment
             getBrowseActivity().onStreamClick(mStream);
         }
 
-        @OnClick(R.id.action_play)
-        void onPlayClick() {
-            getBrowseActivity().playStream(mStream);
+        @OnClick(R.id.action_context_menu)
+        void onPlayClick(final View view) {
+            PopupMenu menu = new PopupMenu(getContext(), view);
+            menu.inflate(R.menu.menu_browse_context);
+            menu.setOnMenuItemClickListener(this);
+            menu.show();
+        }
+
+        @Override
+        public boolean onMenuItemClick(final MenuItem item) {
+            switch (item.getItemId()) {
+                case R.id.action_edit:
+                    StreamUtils.editStream(getContext(), mStream);
+                    return true;
+                case R.id.action_delete:
+                    StreamUtils.deleteStream(getContext(), mStream);
+                    restartLoader();
+                    return true;
+                default:
+                    return false;
+            }
         }
 
         public void bindCursor(final Cursor cursor) {
@@ -64,8 +85,7 @@ public class BrowseFragment extends Fragment
             mStream = stream;
             mTitleView.setText(stream.title);
             mUrlView.setText(stream.url);
-            mPlayButton.setVisibility(isApplicationStarted() && mStream.isMedia() ?
-                    View.VISIBLE : View.GONE);
+            mContextButton.setVisibility(stream.parentId < 0 ? View.VISIBLE : View.GONE);
         }
     }
 

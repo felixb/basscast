@@ -83,7 +83,7 @@ public class EditStreamActivity extends AppCompatActivity {
                 }
                 return true;
             case R.id.action_delete:
-                deleteStream();
+                StreamUtils.deleteStream(this, mStream);
                 finish();
                 return true;
             default:
@@ -144,10 +144,6 @@ public class EditStreamActivity extends AppCompatActivity {
         } else {
             getContentResolver().update(mStream.getUri(), contentValues, null, null);
         }
-    }
-
-    private void deleteStream() {
-        getContentResolver().delete(mStream.getUri(), null, null);
     }
 
     private Stream fetchStream(final Uri uri) {
