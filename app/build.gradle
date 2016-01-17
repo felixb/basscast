@@ -27,6 +27,7 @@ android {
 
 dependencies {
     testCompile 'junit:junit:4.12'
+
     androidTestCompile 'com.squareup.okhttp3:mockwebserver:3.0.0-RC1'
     androidTestCompile 'org.mockito:mockito-core:1.10.19'
     androidTestCompile 'com.google.dexmaker:dexmaker:1.2'

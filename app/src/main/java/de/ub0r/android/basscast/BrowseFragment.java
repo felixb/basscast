@@ -83,9 +83,9 @@ public class BrowseFragment extends Fragment
 
         private void bind(final Stream stream) {
             mStream = stream;
-            mTitleView.setText(stream.title);
-            mUrlView.setText(stream.url);
-            mContextButton.setVisibility(stream.parentId < 0 ? View.VISIBLE : View.GONE);
+            mTitleView.setText(stream.getTitle());
+            mUrlView.setText(stream.getUrl());
+            mContextButton.setVisibility(stream.getParentId() < 0 ? View.VISIBLE : View.GONE);
         }
     }
 
@@ -197,7 +197,7 @@ public class BrowseFragment extends Fragment
     public void restartLoader() {
         if (getActivity() != null) {
             getLoaderManager().restartLoader(
-                    mParentStream == null ? -1 : (int) mParentStream.id, null, this);
+                    mParentStream == null ? -1 : (int) mParentStream.getId(), null, this);
         }
     }
 
@@ -251,10 +251,6 @@ public class BrowseFragment extends Fragment
         mIsLoading = false;
         updateViewsVisibility();
         // TODO
-    }
-
-    private boolean isApplicationStarted() {
-        return getBrowseActivity().isApplicationStarted();
     }
 
     private void updateViewsVisibility() {

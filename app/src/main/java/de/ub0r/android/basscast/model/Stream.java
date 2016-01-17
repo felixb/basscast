@@ -7,12 +7,9 @@ import android.content.ContentUris;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
-import android.text.TextUtils;
 
 import ckm.simple.sql_provider.annotation.SimpleSQLColumn;
 import ckm.simple.sql_provider.annotation.SimpleSQLTable;
-import de.ub0r.android.basscast.InputError;
-import de.ub0r.android.basscast.R;
 
 /**
  * @author flx
@@ -21,42 +18,41 @@ import de.ub0r.android.basscast.R;
 public class Stream {
 
     @SimpleSQLColumn(value = "_id", primary = true, autoincrement = true)
-    public long id = -1;
+    private long id = -1;
 
     @SimpleSQLColumn("base_id")
-    public long baseId = -1;
+    private long baseId = -1;
 
     @SimpleSQLColumn("parent_id")
-    public long parentId = -1;
+    private long parentId = -1;
 
-    @SimpleSQLColumn("inserted")
-    public long inserted = System.currentTimeMillis();
+    @SimpleSQLColumn("updated")
+    private long updated = System.currentTimeMillis();
 
     @SimpleSQLColumn("url")
-    public String url;
+    private String url;
 
     @SimpleSQLColumn("title")
-    public String title;
-
-    @SimpleSQLColumn("type")
-    public int type;
+    private String title;
 
     @SimpleSQLColumn("mime_type")
-    public String mimeType;
+    // shadow only for creating the column, do not use!
+    private String mimeType;
+
+    private MimeType mMimeType;
 
     public Stream() {
         // empty default constructor
     }
 
-    public Stream(final String url, final String title, final String mimeType) {
+    public Stream(final String url, final String title, final MimeType mimeType) {
         this.url = url;
         this.title = title;
-        this.mimeType = mimeType;
-        parseMimeType();
+        this.mMimeType = mimeType;
     }
 
     public Stream(@NonNull final Stream parentStream, final String url, final String title,
-            final String mimeType) {
+            final MimeType mimeType) {
         this(url, title, mimeType);
         if (parentStream.baseId < 0) {
             this.baseId = parentStream.id;
@@ -70,25 +66,87 @@ public class Stream {
         this.id = bundle.getLong(StreamsTable.FIELD__ID, -1);
         this.baseId = bundle.getLong(StreamsTable.FIELD_BASE_ID, -1);
         this.parentId = bundle.getLong(StreamsTable.FIELD_PARENT_ID, -1);
-        this.inserted = bundle.getLong(StreamsTable.FIELD_INSERTED, System.currentTimeMillis());
+        this.updated = bundle.getLong(StreamsTable.FIELD_UPDATED, System.currentTimeMillis());
         this.url = bundle.getString(StreamsTable.FIELD_URL);
         this.title = bundle.getString(StreamsTable.FIELD_TITLE);
-        this.type = bundle.getInt(StreamsTable.FIELD_TYPE);
-        this.mimeType = bundle.getString(StreamsTable.FIELD_MIME_TYPE);
+        setMimeType(bundle.getString(StreamsTable.FIELD_MIME_TYPE));
     }
 
     public Stream(final Uri uri) {
         this.url = uri.getScheme() + "://" + uri.getHost() + uri.getPath();
         this.title = uri.getQueryParameter(StreamsTable.FIELD_TITLE);
-        this.mimeType = uri.getQueryParameter(StreamsTable.FIELD_MIME_TYPE);
-        parseMimeType();
+        setMimeType(uri.getQueryParameter(StreamsTable.FIELD_MIME_TYPE));
+    }
+
+    public long getId() {
+        return id;
+    }
+
+    public void setId(final long id) {
+        this.id = id;
+    }
+
+    public long getBaseId() {
+        return baseId;
+    }
+
+    public void setBaseId(final long baseId) {
+        this.baseId = baseId;
+    }
+
+    public long getParentId() {
+        return parentId;
+    }
+
+    public void setParentId(final long parentId) {
+        this.parentId = parentId;
+    }
+
+    public long getUpdated() {
+        return updated;
+    }
+
+    public void setUpdated(final long updated) {
+        this.updated = updated;
+    }
+
+    public String getUrl() {
+        return url;
+    }
+
+    public void setUrl(final String url) {
+        this.url = url;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public void setTitle(final String title) {
+        this.title = title;
+    }
+
+    public String getMimeType() {
+        if (mMimeType == null) {
+            return null;
+        } else {
+            return mMimeType.getMimeType();
+        }
+    }
+
+    public void setMimeType(final String mimeType) {
+        if (mimeType == null) {
+            mMimeType = null;
+        } else {
+            this.mMimeType = new MimeType(mimeType);
+        }
     }
 
     public MediaInfo getMediaMetadata() {
-        MediaMetadata mediaMetadata = new MediaMetadata(type);
+        MediaMetadata mediaMetadata = new MediaMetadata(mMimeType.getType());
         mediaMetadata.putString(MediaMetadata.KEY_TITLE, title);
         return new MediaInfo.Builder(url)
-                .setContentType(mimeType)
+                .setContentType(getMimeType())
                 .setStreamType(MediaInfo.STREAM_TYPE_BUFFERED)
                 .setMetadata(mediaMetadata)
                 .build();
@@ -103,17 +161,16 @@ public class Stream {
         b.putLong(StreamsTable.FIELD__ID, id);
         b.putLong(StreamsTable.FIELD_BASE_ID, baseId);
         b.putLong(StreamsTable.FIELD_PARENT_ID, parentId);
-        b.putLong(StreamsTable.FIELD_INSERTED, inserted);
+        b.putLong(StreamsTable.FIELD_UPDATED, updated);
         b.putString(StreamsTable.FIELD_URL, url);
         b.putString(StreamsTable.FIELD_TITLE, title);
-        b.putInt(StreamsTable.FIELD_TYPE, type);
-        b.putString(StreamsTable.FIELD_MIME_TYPE, mimeType);
+        b.putString(StreamsTable.FIELD_MIME_TYPE, getMimeType());
         return b;
     }
 
     public Uri toSharableUri() {
         return Uri.parse(url).buildUpon()
-                .appendQueryParameter(StreamsTable.FIELD_MIME_TYPE, mimeType)
+                .appendQueryParameter(StreamsTable.FIELD_MIME_TYPE, getMimeType())
                 .appendQueryParameter(StreamsTable.FIELD_TITLE, title)
                 .build();
     }
@@ -123,35 +180,30 @@ public class Stream {
         return "Stream: " + toBundle();
     }
 
+    public boolean isPlayable() {
+        return mMimeType != null && mMimeType.isPlayable();
+    }
+
+    public boolean isSupported() {
+        return mMimeType != null && mMimeType.isSupported();
+    }
+
     @Override
     public boolean equals(final Object o) {
-        Stream otherStream = (Stream) o;
-        return id == otherStream.id &&
-                baseId == otherStream.baseId &&
-                parentId == otherStream.parentId &&
-                url.equals(otherStream.url) &&
-                title.equals(otherStream.title) &&
-                type == otherStream.type &&
-                mimeType.equals(otherStream.mimeType);
-    }
-
-    public void parseMimeType() {
-        if (TextUtils.isEmpty(mimeType)) {
-            throw new InputError("missing mandatory parameter: mimeType",
-                    R.string.missing_mandatory_parameter);
-        } else if (mimeType.startsWith("audio")) {
-            type = MediaMetadata.MEDIA_TYPE_MUSIC_TRACK;
-        } else if (mimeType.startsWith("video")) {
-            type = MediaMetadata.MEDIA_TYPE_MOVIE;
-        } else if (mimeType.startsWith("text")) {
-            type = -1;
-        } else {
-            throw new InputError("unsupported mime type: " + mimeType,
-                    R.string.unsupported_mime_type);
+        if (this == o) {
+            return true;
         }
-    }
 
-    public boolean isMedia() {
-        return type >= 0;
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+
+        Stream stream = (Stream) o;
+        return id == stream.id &&
+                baseId == stream.baseId &&
+                parentId == stream.parentId &&
+                url.equals(stream.url) &&
+                title.equals(stream.title) &&
+                mMimeType.equals(stream.mMimeType);
     }
 }

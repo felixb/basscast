@@ -9,6 +9,7 @@ import de.ub0r.android.basscast.model.Stream;
  * @author flx
  */
 public class StreamUtils {
+
     private StreamUtils() {
         // hide constructor
     }

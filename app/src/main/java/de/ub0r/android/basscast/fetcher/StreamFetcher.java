@@ -8,14 +8,13 @@ import org.jsoup.select.Elements;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
 import android.util.Log;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 
+import de.ub0r.android.basscast.model.MimeType;
 import de.ub0r.android.basscast.model.Stream;
 import de.ub0r.android.basscast.model.StreamsTable;
 import okhttp3.OkHttpClient;
@@ -25,22 +24,6 @@ import okhttp3.Response;
 public class StreamFetcher {
 
     private static final String TAG = "StreamFetcher";
-
-    private static final HashMap<String, String> EXTENSIONS = new HashMap<>();
-
-    static {
-        EXTENSIONS.put(".html", "text/html");
-        EXTENSIONS.put(".htm", "text/html");
-        EXTENSIONS.put(".php", "text/html");
-        EXTENSIONS.put(".jsp", "text/html");
-        EXTENSIONS.put(".asp", "text/html");
-        EXTENSIONS.put(".mp3", "audio/mp3");
-        EXTENSIONS.put(".mp4", "video/mp4");
-        EXTENSIONS.put(".png", "image/png");
-        EXTENSIONS.put(".gif", "image/gif");
-        EXTENSIONS.put(".jpg", "image/jpeg");
-        EXTENSIONS.put(".jpeg", "image/jpeg");
-    }
 
     private final Context mContext;
 
@@ -64,7 +47,7 @@ public class StreamFetcher {
         for (Stream oldStream : existingStreams) {
             boolean found = false;
             for (Stream newStream : streams) {
-                if (oldStream.url.equals(newStream.url)) {
+                if (oldStream.getUrl().equals(newStream.getUrl())) {
                     found = true;
                     break;
                 }
@@ -85,7 +68,7 @@ public class StreamFetcher {
         for (Stream newStream : streams) {
             boolean found = false;
             for (Stream oldStream : existingStreams) {
-                if (oldStream.url.equals(newStream.url)) {
+                if (oldStream.getUrl().equals(newStream.getUrl())) {
                     found = true;
                     cr.update(oldStream.getUri(), StreamsTable.getContentValues(newStream, false),
                             null, null);
@@ -100,8 +83,8 @@ public class StreamFetcher {
         }
     }
 
-    public String fetchMimeType(final String url) throws IOException {
-        String mimeType = guessMimeType(url);
+    public MimeType fetchMimeType(final String url) throws IOException {
+        MimeType mimeType = MimeType.guessMimeType(url);
         if (mimeType != null) {
             return mimeType;
         }
@@ -110,37 +93,35 @@ public class StreamFetcher {
                 .head()
                 .url(url)
                 .build()).execute();
-        mimeType = response.header("Content-Type");
-        if (mimeType == null) {
+        String contentType = response.header("Content-Type");
+        if (contentType == null) {
             return null;
         }
 
-        return mimeType.split(";", 2)[0].trim().toLowerCase();
+        return new MimeType(contentType);
     }
 
     public List<Stream> fetch(@NonNull final Stream parent) throws IOException {
-        Log.d(TAG, "fetch(" + parent.url + ")");
+        Log.d(TAG, "fetch(" + parent.getUrl() + ")");
 
         final ArrayList<Stream> list = new ArrayList<>();
 
         final Response response = mHttpClient.newCall(new Request.Builder()
-                .url(parent.url)
+                .url(parent.getUrl())
                 .build()).execute();
         String mimeType = response.header("Content-Type");
         Log.d(TAG, "fetch(): Response Content-Type: " + mimeType);
         if (mimeType != null && mimeType.startsWith("text/html")) {
-            final Document doc = Jsoup.parse(response.body().string(), parent.url);
+            final Document doc = Jsoup.parse(response.body().string(), parent.getUrl());
             Elements elements = doc.select("a[href]");
             Log.d(TAG, "fetch(): Found " + elements.size() + " links");
             for (Element element : elements) {
-                String url = element.attr("abs:href");
-                if (url.startsWith(parent.url)) {
-                    try {
-                        Log.d(TAG, "fetch(): Adding " + url + " to results.");
-                        list.add(new Stream(parent, url, element.text(), fetchMimeType(url)));
-                    } catch (IllegalArgumentException e) {
-                        Log.w(TAG, "fetch(): Ignoring invalid stream: " + e);
-                    }
+                String url = getUrlFromElement(element);
+                MimeType elementsMimeType = MimeType.guessMimeType(url);
+                if (url.length() > parent.getUrl().length() && url.startsWith(parent.getUrl())) {
+                    addStream(parent, list, element, url);
+                } else if (elementsMimeType != null && elementsMimeType.isPlayable()) {
+                    addStream(parent, list, element, url);
                 } else {
                     Log.d(TAG, "fetch(): Ignoring URL: " + url);
                 }
@@ -150,15 +131,24 @@ public class StreamFetcher {
         return list;
     }
 
-    @Nullable
-    private String guessMimeType(@NonNull final String url) {
-        final String lowerUrl = url.toLowerCase();
-        for (String ext : EXTENSIONS.keySet()) {
-            if (lowerUrl.endsWith(ext)) {
-                return EXTENSIONS.get(ext);
-            }
+    private void addStream(@NonNull final Stream parent, @NonNull final ArrayList<Stream> list,
+            @NonNull final Element element, @NonNull final String url) throws IOException {
+        Stream stream = new Stream(parent, url, element.text(), fetchMimeType(url));
+        if (stream.isSupported()) {
+            Log.d(TAG, "Adding stream: " + url);
+            list.add(stream);
+        } else {
+            Log.w(TAG, "Ignoring invalid stream: " + url);
         }
-        return null;
+    }
+
+    @NonNull
+    private String getUrlFromElement(final Element element) {
+        String url = element.attr("abs:href");
+        if (url.contains("#")) {
+            url = url.substring(0, url.indexOf("#"));
+        }
+        return url;
     }
 
     @NonNull
@@ -168,7 +158,7 @@ public class StreamFetcher {
                         StreamsTable.CONTENT_URI,
                         null,
                         StreamsTable.FIELD_PARENT_ID + "=?",
-                        new String[]{String.valueOf(parent.id)},
+                        new String[]{String.valueOf(parent.getId())},
                         null),
                 true);
     }

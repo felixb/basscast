@@ -15,6 +15,7 @@ import android.widget.EditText;
 
 import butterknife.Bind;
 import butterknife.ButterKnife;
+import de.ub0r.android.basscast.model.MimeType;
 import de.ub0r.android.basscast.model.Stream;
 import de.ub0r.android.basscast.model.StreamsTable;
 
@@ -65,7 +66,7 @@ public class EditStreamActivity extends AppCompatActivity {
     @Override
     public boolean onCreateOptionsMenu(final Menu menu) {
         getMenuInflater().inflate(R.menu.menu_edit_stream, menu);
-        if (mStream.id < 0) {
+        if (mStream.getId() < 0) {
             menu.removeItem(R.id.action_delete);
         }
         return true;
@@ -92,23 +93,17 @@ public class EditStreamActivity extends AppCompatActivity {
     }
 
     private void restoreViewsFromStream() {
-        mTitleView.setText(mStream.title);
-        mUrlView.setText(mStream.url);
-        mMimeTypeView.setText(mStream.mimeType);
+        mTitleView.setText(mStream.getTitle());
+        mUrlView.setText(mStream.getUrl());
+        mMimeTypeView.setText(mStream.getMimeType());
     }
 
     private void storeStreamFromViews() {
         boolean valid = checkFields();
-        mStream.title = mTitleView.getText().toString();
-        mStream.url = mUrlView.getText().toString();
-        mStream.mimeType = mMimeTypeView.getText().toString();
+        mStream.setTitle(mTitleView.getText().toString());
+        mStream.setUrl(mUrlView.getText().toString());
+        mStream.setMimeType(mMimeTypeView.getText().toString());
 
-        try {
-            mStream.parseMimeType();
-        } catch (InputError e) {
-            e.show(this, mMimeTypeView);
-            throw e;
-        }
         if (!valid) {
             throw new IllegalArgumentException("input checks failed");
         }
@@ -133,13 +128,21 @@ public class EditStreamActivity extends AppCompatActivity {
             }
         }
 
+        if (TextUtils.isEmpty(mMimeTypeView.getText())) {
+            mMimeTypeView.setError(getString(R.string.missing_mandatory_parameter));
+            result = false;
+        } else if (!new MimeType(mMimeTypeView.getText().toString()).isSupported()) {
+            mMimeTypeView.setError(getString(R.string.unsupported_mime_type));
+            result = false;
+        }
+
         return result;
     }
 
     private void saveStream() {
         storeStreamFromViews();
         ContentValues contentValues = StreamsTable.getContentValues(mStream, false);
-        if (mStream.id < 0) {
+        if (mStream.getId() < 0) {
             getContentResolver().insert(StreamsTable.CONTENT_URI, contentValues);
         } else {
             getContentResolver().update(mStream.getUri(), contentValues, null, null);

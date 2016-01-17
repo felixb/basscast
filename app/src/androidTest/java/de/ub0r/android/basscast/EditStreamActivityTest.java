@@ -1,7 +1,5 @@
 package de.ub0r.android.basscast;
 
-import com.google.android.gms.cast.MediaMetadata;
-
 import android.annotation.SuppressLint;
 import android.content.ContentUris;
 import android.content.Intent;
@@ -10,6 +8,7 @@ import android.net.Uri;
 import android.test.ActivityInstrumentationTestCase2;
 import android.view.View;
 
+import de.ub0r.android.basscast.model.MimeType;
 import de.ub0r.android.basscast.model.Stream;
 import de.ub0r.android.basscast.model.StreamsTable;
 
@@ -37,12 +36,12 @@ public class EditStreamActivityTest extends ActivityInstrumentationTestCase2<Edi
         Stream stream = insertTestStream();
         setActivityIntent(new Intent(Intent.ACTION_EDIT, stream.getUri()));
 
-        assertEquals(stream.title, getActivity().mTitleView.getText().toString());
-        assertEquals(stream.url, getActivity().mUrlView.getText().toString());
-        assertEquals(stream.mimeType, getActivity().mMimeTypeView.getText().toString());
+        assertEquals(stream.getTitle(), getActivity().mTitleView.getText().toString());
+        assertEquals(stream.getUrl(), getActivity().mUrlView.getText().toString());
+        assertEquals(stream.getMimeType(), getActivity().mMimeTypeView.getText().toString());
     }
 
-    public void testShowsEmtpyStreamDetailsOnInsert() {
+    public void testShowsEmptyStreamDetailsOnInsert() {
         setActivityIntent(new Intent(Intent.ACTION_INSERT));
 
         assertEquals("", getActivity().mTitleView.getText().toString());
@@ -151,10 +150,9 @@ public class EditStreamActivityTest extends ActivityInstrumentationTestCase2<Edi
         invokeActionItem(R.id.action_save);
 
         Stream stream = assertInserted();
-        assertEquals("Fancy test Stream!", stream.title);
-        assertEquals(TEST_URL, stream.url);
-        assertEquals("video/*", stream.mimeType);
-        assertEquals(MediaMetadata.MEDIA_TYPE_MOVIE, stream.type);
+        assertEquals("Fancy test Stream!", stream.getTitle());
+        assertEquals(TEST_URL, stream.getUrl());
+        assertEquals("video/*", stream.getMimeType());
     }
 
     public void testEditStream() {
@@ -175,10 +173,9 @@ public class EditStreamActivityTest extends ActivityInstrumentationTestCase2<Edi
 
         stream = assertInserted();
 
-        assertEquals("Fancy test Stream!", stream.title);
-        assertEquals(TEST_URL, stream.url);
-        assertEquals("audio/*", stream.mimeType);
-        assertEquals(MediaMetadata.MEDIA_TYPE_MUSIC_TRACK, stream.type);
+        assertEquals("Fancy test Stream!", stream.getTitle());
+        assertEquals(TEST_URL, stream.getUrl());
+        assertEquals("audio/*", stream.getMimeType());
     }
 
     public void testEditStreamShowsDeleteMenuItem() {
@@ -197,10 +194,10 @@ public class EditStreamActivityTest extends ActivityInstrumentationTestCase2<Edi
     }
 
     private Stream insertTestStream() {
-        Stream stream = new Stream(TEST_URL, "Some fancy stream", "audio/mp3");
+        Stream stream = new Stream(TEST_URL, "Some fancy stream", new MimeType("audio/mp3"));
         Uri streamUri = getInstrumentation().getContext().getContentResolver()
                 .insert(StreamsTable.CONTENT_URI, StreamsTable.getContentValues(stream, false));
-        stream.id = ContentUris.parseId(streamUri);
+        stream.setId(ContentUris.parseId(streamUri));
         return stream;
     }
 

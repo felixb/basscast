@@ -1,12 +1,7 @@
 package de.ub0r.android.basscast.model;
 
-import com.google.android.gms.cast.MediaMetadata;
-
 import android.net.Uri;
 import android.test.AndroidTestCase;
-
-import de.ub0r.android.basscast.model.Stream;
-import de.ub0r.android.basscast.model.StreamsTable;
 
 /**
  * @author flx
@@ -14,45 +9,45 @@ import de.ub0r.android.basscast.model.StreamsTable;
 public class StreamTest extends AndroidTestCase {
 
     public void testNewStreamWithBaseStream() {
-        final Stream base = new Stream("http://example.org", "base", "text/html");
-        base.id = 5;
+        final Stream base = new Stream("http://example.org", "base", new MimeType("text/html"));
+        base.setId(5);
         // base.baseId = -1
         // base.parentId = -1
 
-        Stream parent0 = new Stream(base, "http://example.org/foo", "parent 0", "text/html");
-        parent0.id = 6;
-        assertEquals(5, parent0.baseId);
-        assertEquals(5, parent0.parentId);
+        Stream parent0 = new Stream(base, "http://example.org/foo", "parent 0",
+                new MimeType("text/html"));
+        parent0.setId(6);
+        assertEquals(5, parent0.getBaseId());
+        assertEquals(5, parent0.getParentId());
 
-        Stream parent1 = new Stream(parent0, "http://example.org/foo/bar", "parent 1", "text/html");
-        parent1.id = 7;
-        assertEquals(5, parent1.baseId);
-        assertEquals(6, parent1.parentId);
+        Stream parent1 = new Stream(parent0, "http://example.org/foo/bar", "parent 1",
+                new MimeType("text/html"));
+        parent1.setId(7);
+        assertEquals(5, parent1.getBaseId());
+        assertEquals(6, parent1.getParentId());
 
-
-        Stream child = new Stream(parent1, "http://example.org/foo/bar/stream", "child", "audio/mp3");
-        assertEquals(5, child.baseId);
-        assertEquals(7, child.parentId);
+        Stream child = new Stream(parent1, "http://example.org/foo/bar/stream", "child",
+                new MimeType("audio/mp3"));
+        assertEquals(5, child.getBaseId());
+        assertEquals(7, child.getParentId());
     }
 
     public void testStreamToBundle() {
         final Stream s = new Stream();
-        s.id = 5;
-        s.title = "some stream";
-        s.url = "http://example.com/stream";
-        s.type = MediaMetadata.MEDIA_TYPE_MUSIC_TRACK;
-        s.mimeType = "some/mime";
+        s.setId(5);
+        s.setTitle("some stream");
+        s.setUrl("http://example.com/stream");
+        s.setMimeType("some/mime");
 
         assertEquals(s, new Stream(s.toBundle()));
     }
 
     public void testStreamToUri() {
         final Stream s = new Stream();
-        s.id = 5;
-        s.title = "some stream";
-        s.url = "http://example.com/stream";
-        s.type = MediaMetadata.MEDIA_TYPE_MUSIC_TRACK;
-        s.mimeType = "audio/mp3";
+        s.setId(5);
+        s.setTitle("some stream");
+        s.setUrl("http://example.com/stream");
+        s.setMimeType("audio/mp3");
 
         final Uri u = s.toSharableUri();
         assertEquals("http", u.getScheme());
@@ -62,34 +57,10 @@ public class StreamTest extends AndroidTestCase {
         assertEquals("some stream", u.getQueryParameter(StreamsTable.FIELD_TITLE));
 
         final Stream newStream = new Stream(u);
-        assertEquals(s.title, newStream.title);
-        assertEquals(s.url, newStream.url);
-        assertEquals(s.mimeType, newStream.mimeType);
-        assertEquals(s.type, newStream.type);
+        assertEquals(s.getTitle(), newStream.getTitle());
+        assertEquals(s.getUrl(), newStream.getUrl());
+        assertEquals(s.getMimeType(), newStream.getMimeType());
 
         assertEquals(u, newStream.toSharableUri());
-    }
-
-    public void testParseMimeType() {
-        final Stream s = new Stream();
-        s.id = 5;
-        s.title = "some stream";
-        s.url = "http://example.com/stream";
-
-        s.mimeType = "audio/*";
-        s.parseMimeType();
-        assertEquals(MediaMetadata.MEDIA_TYPE_MUSIC_TRACK, s.type);
-
-        s.mimeType = "video/*";
-        s.parseMimeType();
-        assertEquals(MediaMetadata.MEDIA_TYPE_MOVIE, s.type);
-
-        try {
-            s.mimeType = "unsupported/type";
-            s.parseMimeType();
-            fail("should have raised IllegalArgumentException");
-        } catch (Exception e) {
-            assertTrue(e instanceof IllegalArgumentException);
-        }
     }
 }

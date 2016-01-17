@@ -4,6 +4,7 @@ import android.content.ContentValues;
 import android.test.ActivityInstrumentationTestCase2;
 import android.view.View;
 
+import de.ub0r.android.basscast.model.MimeType;
 import de.ub0r.android.basscast.model.Stream;
 import de.ub0r.android.basscast.model.StreamsTable;
 
@@ -57,7 +58,7 @@ public class BrowseFragmentTest extends ActivityInstrumentationTestCase2<BrowseA
 
     public void testHidesEmptyView() {
         // add test stream
-        Stream stream = new Stream(TEST_URL, "Some fancy stream", "audio/mp3");
+        Stream stream = new Stream(TEST_URL, "Some fancy stream", new MimeType("audio/mp3"));
         getInstrumentation().getContext().getContentResolver()
                 .insert(StreamsTable.CONTENT_URI, StreamsTable.getContentValues(stream, false));
 

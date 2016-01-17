@@ -4,6 +4,7 @@ import org.mockito.Mockito;
 
 import android.test.ActivityInstrumentationTestCase2;
 
+import de.ub0r.android.basscast.model.MimeType;
 import de.ub0r.android.basscast.model.Stream;
 
 /**
@@ -40,7 +41,8 @@ public class BrowseActivityTest extends ActivityInstrumentationTestCase2<BrowseA
         getInstrumentation().runOnMainSync(new Runnable() {
             @Override
             public void run() {
-                Stream stream = new Stream("http://example.org/", "example stream", "text/html");
+                Stream stream = new Stream("http://example.org/", "example stream",
+                        new MimeType("text/html"));
                 activity.setStreamInfo(stream);
             }
         });

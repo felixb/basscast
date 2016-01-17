@@ -477,7 +477,7 @@ public class BrowseActivity extends AppCompatActivity {
             mToolbar.setNavigationIcon(null);
             mToolbar.setNavigationOnClickListener(null);
         } else {
-            mToolbar.setSubtitle(stream.title);
+            mToolbar.setSubtitle(stream.getTitle());
             mToolbar.setNavigationIcon(R.drawable.abc_ic_ab_back_mtrl_am_alpha);
             mToolbar.setNavigationOnClickListener(new View.OnClickListener() {
                 @Override
@@ -491,7 +491,7 @@ public class BrowseActivity extends AppCompatActivity {
     }
 
     public void onStreamClick(final Stream stream) {
-        if (stream.isMedia()) {
+        if (stream.isPlayable()) {
             playStream(stream);
         } else {
             showStream(stream);
@@ -499,7 +499,7 @@ public class BrowseActivity extends AppCompatActivity {
     }
 
     void playStream(final Stream stream) {
-        Toast.makeText(this, "Playing stream: " + stream.title, Toast.LENGTH_LONG).show();
+        Toast.makeText(this, "Playing stream: " + stream.getTitle(), Toast.LENGTH_LONG).show();
         MediaInfo mediaInfo = stream.getMediaMetadata();
 
         try {
