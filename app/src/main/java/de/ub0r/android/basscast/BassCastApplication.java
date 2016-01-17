@@ -24,7 +24,7 @@ public class BassCastApplication extends Application {
             cr.insert(StreamsTable.CONTENT_URI, StreamsTable.getContentValues(new Stream(
                     "http://www.tagesschau.de/sendung/tagesschau/index.html",
                     "Tagesschau",
-                    new MimeType("video/mp4")
+                    new MimeType("text/html")
             ), false));
 
             cr.insert(StreamsTable.CONTENT_URI, StreamsTable.getContentValues(new Stream(
