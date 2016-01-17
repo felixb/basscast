@@ -5,4 +5,5 @@
     <dimen name="fab_margin">16dp</dimen>
     <dimen name="controls_elevation">16dp</dimen>
     <dimen name="controls_height">48dp</dimen>
+    <dimen name="loading_scrollbar_size">64dp</dimen>
 </resources>

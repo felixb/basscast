@@ -94,15 +94,22 @@ public class BrowseFragment extends Fragment
 
     private static final String ARG_PARENT_STREAM = "PARENT_STREAM";
 
+    private static final String ARG_IS_LOADING = "IS_LOADING";
+
     @Bind(android.R.id.list)
     RecyclerView mRecyclerView;
 
     @Bind(android.R.id.empty)
     View mEmptyView;
 
+    @Bind(R.id.loading)
+    View mLoadingView;
+
     private Stream mParentStream;
 
     private StreamAdapter mAdapter;
+
+    private boolean mIsLoading;
 
     public static BrowseFragment getInstance(final Stream parentStream) {
         BrowseFragment f = new BrowseFragment();
@@ -127,6 +134,9 @@ public class BrowseFragment extends Fragment
         Bundle args = getArguments();
         if (args != null && args.containsKey(ARG_PARENT_STREAM)) {
             mParentStream = new Stream(args.getBundle(ARG_PARENT_STREAM));
+        }
+        if (savedInstanceState != null) {
+            mIsLoading = savedInstanceState.getBoolean(ARG_IS_LOADING);
         }
     }
 
@@ -158,6 +168,12 @@ public class BrowseFragment extends Fragment
         super.onPause();
     }
 
+    @Override
+    public void onSaveInstanceState(final Bundle outState) {
+        outState.putBoolean(ARG_IS_LOADING, mIsLoading);
+        super.onSaveInstanceState(outState);
+    }
+
     public void restartLoader() {
         if (getActivity() != null) {
             getLoaderManager().restartLoader(
@@ -182,13 +198,13 @@ public class BrowseFragment extends Fragment
     public void onLoadFinished(final Loader<Cursor> loader, final Cursor data) {
         Log.d(TAG, "Showing new data set: " + data.getCount());
         mAdapter.swapCursor(data);
-        setEmptyViewVisibility();
+        updateViewsVisibility();
     }
 
     @Override
     public void onLoaderReset(final Loader<Cursor> loader) {
         mAdapter.swapCursor(null);
-        setEmptyViewVisibility();
+        updateViewsVisibility();
     }
 
     @Override
@@ -200,16 +216,20 @@ public class BrowseFragment extends Fragment
 
     @Override
     public void onFetchStarted() {
-        // TODO update UI if empty list
+        mIsLoading = true;
+        updateViewsVisibility();
     }
 
     @Override
     public void onFetchFinished() {
+        mIsLoading = false;
         restartLoader();
     }
 
     @Override
     public void onFetchFailed() {
+        mIsLoading = false;
+        updateViewsVisibility();
         // TODO
     }
 
@@ -217,12 +237,13 @@ public class BrowseFragment extends Fragment
         return getBrowseActivity().isApplicationStarted();
     }
 
-    private void setEmptyViewVisibility() {
+    private void updateViewsVisibility() {
         if (mEmptyView == null) {
             return;
         }
         Cursor cursor = mAdapter.getCursor();
-        mEmptyView
-                .setVisibility(cursor == null || cursor.getCount() == 0 ? View.VISIBLE : View.GONE);
+        boolean empty = cursor == null || cursor.getCount() == 0;
+        mEmptyView.setVisibility(empty && !mIsLoading ? View.VISIBLE : View.GONE);
+        mLoadingView.setVisibility(empty && mIsLoading ? View.VISIBLE : View.GONE);
     }
 }

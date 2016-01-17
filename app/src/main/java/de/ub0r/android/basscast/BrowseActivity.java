@@ -292,11 +292,18 @@ public class BrowseActivity extends AppCompatActivity {
     }
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    protected void onCreate(final Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_browse);
         ButterKnife.bind(this);
         setSupportActionBar(mToolbar);
+
+        if (savedInstanceState == null) {
+            getSupportFragmentManager().beginTransaction()
+                    .replace(R.id.fragment_container, BrowseFragment.getInstance(null))
+                    .setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN)
+                    .commit();
+        }
 
         SharedPreferences preferences = getSharedPreferences(PREFS_FILE_CHROMECAST, MODE_PRIVATE);
         mRouteId = preferences.getString(PREFS_ROUTE_ID, null);
@@ -520,7 +527,6 @@ public class BrowseActivity extends AppCompatActivity {
     }
 
     private void showStream(final Stream parentStream) {
-        // FIXME basFragment is visible during animation
         BrowseFragment fragment = BrowseFragment.getInstance(parentStream);
         getSupportFragmentManager().beginTransaction()
                 .replace(R.id.fragment_container, fragment)

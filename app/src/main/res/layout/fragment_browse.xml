@@ -33,9 +33,31 @@
                 android:text="@string/empty_streams"/>
     </LinearLayout>
 
+    <LinearLayout
+            android:id="@+id/loading"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="@dimen/activity_horizontal_margin"
+            android:layout_marginRight="@dimen/activity_horizontal_margin"
+            android:layout_gravity="center"
+            android:gravity="center"
+            android:orientation="vertical">
+
+        <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textAppearance="?android:textAppearanceLarge"
+                android:text="@string/loading"/>
+        <ProgressBar
+                android:layout_width="@dimen/loading_scrollbar_size"
+                android:layout_height="@dimen/loading_scrollbar_size"
+                android:layout_marginTop="@dimen/activity_vertical_margin"/>
+    </LinearLayout>
+
     <android.support.v7.widget.RecyclerView
             android:id="@android:id/list"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"/>
+            android:layout_height="match_parent"
+            android:scrollbars="vertical"/>
 
 </FrameLayout>
