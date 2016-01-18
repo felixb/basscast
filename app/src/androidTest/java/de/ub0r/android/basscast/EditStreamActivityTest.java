@@ -8,9 +8,13 @@ import android.net.Uri;
 import android.test.ActivityInstrumentationTestCase2;
 import android.view.View;
 
+import java.io.IOException;
+
 import de.ub0r.android.basscast.model.MimeType;
 import de.ub0r.android.basscast.model.Stream;
 import de.ub0r.android.basscast.model.StreamsTable;
+import okhttp3.mockwebserver.MockResponse;
+import okhttp3.mockwebserver.MockWebServer;
 
 /**
  * @author flx
@@ -20,6 +24,9 @@ public class EditStreamActivityTest extends ActivityInstrumentationTestCase2<Edi
 
     private static final String TEST_URL = "http://example.org/test-stream";
 
+    public static final String TEST_SELECTION = StreamsTable.FIELD_URL + " like '%example.org%' or "
+            + StreamsTable.FIELD_URL + " like '%localhost%'";
+
     public EditStreamActivityTest() {
         super(EditStreamActivity.class);
     }
@@ -28,8 +35,7 @@ public class EditStreamActivityTest extends ActivityInstrumentationTestCase2<Edi
     protected void tearDown() throws Exception {
         super.tearDown();
         getInstrumentation().getContext().getContentResolver()
-                .delete(StreamsTable.CONTENT_URI, StreamsTable.FIELD_URL + "=?",
-                        new String[]{TEST_URL});
+                .delete(StreamsTable.CONTENT_URI, TEST_SELECTION, null);
     }
 
     public void testShowsStreamDetailsFromDatabase() {
@@ -38,7 +44,6 @@ public class EditStreamActivityTest extends ActivityInstrumentationTestCase2<Edi
 
         assertEquals(stream.getTitle(), getActivity().mTitleView.getText().toString());
         assertEquals(stream.getUrl(), getActivity().mUrlView.getText().toString());
-        assertEquals(stream.getMimeType(), getActivity().mMimeTypeView.getText().toString());
     }
 
     public void testShowsEmptyStreamDetailsOnInsert() {
@@ -46,7 +51,6 @@ public class EditStreamActivityTest extends ActivityInstrumentationTestCase2<Edi
 
         assertEquals("", getActivity().mTitleView.getText().toString());
         assertEquals("", getActivity().mUrlView.getText().toString());
-        assertEquals("", getActivity().mMimeTypeView.getText().toString());
     }
 
     @SuppressWarnings("ConstantConditions")
@@ -68,7 +72,6 @@ public class EditStreamActivityTest extends ActivityInstrumentationTestCase2<Edi
             public void run() {
                 activity.mTitleView.setText("");
                 activity.mUrlView.setText(TEST_URL);
-                activity.mMimeTypeView.setText("audio/*");
             }
         });
 
@@ -87,7 +90,6 @@ public class EditStreamActivityTest extends ActivityInstrumentationTestCase2<Edi
             public void run() {
                 activity.mTitleView.setText("Stream w/ empty URL");
                 activity.mUrlView.setText("");
-                activity.mMimeTypeView.setText("audio/*");
             }
         });
 
@@ -106,7 +108,6 @@ public class EditStreamActivityTest extends ActivityInstrumentationTestCase2<Edi
             public void run() {
                 activity.mTitleView.setText("Stream w/ invalid URL");
                 activity.mUrlView.setText("invalid url");
-                activity.mMimeTypeView.setText("audio/*");
             }
         });
 
@@ -116,7 +117,7 @@ public class EditStreamActivityTest extends ActivityInstrumentationTestCase2<Edi
         assertNotInserted();
     }
 
-    public void testInsertInvalidMimeType() {
+    public void testInsertUnsupportedMimeType() {
         setActivityIntent(new Intent(Intent.ACTION_INSERT));
 
         final EditStreamActivity activity = getActivity();
@@ -124,14 +125,12 @@ public class EditStreamActivityTest extends ActivityInstrumentationTestCase2<Edi
             @Override
             public void run() {
                 activity.mTitleView.setText("Stream w/ unsupported mime type");
-                activity.mUrlView.setText(TEST_URL);
-                activity.mMimeTypeView.setText("unsupported/type");
+                activity.mUrlView.setText(TEST_URL + "/cat.jpg");
             }
         });
 
         invokeActionItem(R.id.action_save);
 
-        assertNotNull(activity.mMimeTypeView.getError());
         assertNotInserted();
     }
 
@@ -142,8 +141,7 @@ public class EditStreamActivityTest extends ActivityInstrumentationTestCase2<Edi
             @Override
             public void run() {
                 activity.mTitleView.setText("Fancy test Stream!");
-                activity.mUrlView.setText(TEST_URL);
-                activity.mMimeTypeView.setText("video/*");
+                activity.mUrlView.setText(TEST_URL + "/stream.wma");
             }
         });
 
@@ -151,8 +149,43 @@ public class EditStreamActivityTest extends ActivityInstrumentationTestCase2<Edi
 
         Stream stream = assertInserted();
         assertEquals("Fancy test Stream!", stream.getTitle());
-        assertEquals(TEST_URL, stream.getUrl());
-        assertEquals("video/*", stream.getMimeType());
+        assertEquals(TEST_URL + "/stream.wma", stream.getUrl());
+        assertEquals("audio/wma", stream.getMimeType());
+    }
+
+    public void testInsertStreamWithUnguessableMimeType() throws IOException {
+        final MockWebServer server = new MockWebServer();
+
+        server.enqueue(new MockResponse()
+                .setBody("<html><body></body></html>")
+                .setHeader("Content-Type", "audio/ogg"));
+        server.start();
+
+        final String url = server.url("/stream").toString();
+
+        setActivityIntent(new Intent(Intent.ACTION_INSERT));
+        final EditStreamActivity activity = getActivity();
+        getInstrumentation().runOnMainSync(new Runnable() {
+            @Override
+            public void run() {
+                activity.mTitleView.setText("Fancy test Stream!");
+                activity.mUrlView.setText(url);
+            }
+        });
+
+        invokeActionItem(R.id.action_save);
+
+        // wait for async task. hiw would you test this?
+        try {
+            Thread.sleep(100);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
+        Stream stream = assertInserted();
+        assertEquals("Fancy test Stream!", stream.getTitle());
+        assertEquals(url, stream.getUrl());
+        assertEquals("audio/ogg", stream.getMimeType());
     }
 
     public void testEditStream() {
@@ -164,8 +197,7 @@ public class EditStreamActivityTest extends ActivityInstrumentationTestCase2<Edi
             @Override
             public void run() {
                 activity.mTitleView.setText("Fancy test Stream!");
-                activity.mUrlView.setText(TEST_URL);
-                activity.mMimeTypeView.setText("audio/*");
+                activity.mUrlView.setText(TEST_URL + "/stream.mp4");
             }
         });
 
@@ -174,8 +206,8 @@ public class EditStreamActivityTest extends ActivityInstrumentationTestCase2<Edi
         stream = assertInserted();
 
         assertEquals("Fancy test Stream!", stream.getTitle());
-        assertEquals(TEST_URL, stream.getUrl());
-        assertEquals("audio/*", stream.getMimeType());
+        assertEquals(TEST_URL + "/stream.mp4", stream.getUrl());
+        assertEquals("video/mp4", stream.getMimeType());
     }
 
     public void testEditStreamShowsDeleteMenuItem() {
@@ -203,8 +235,8 @@ public class EditStreamActivityTest extends ActivityInstrumentationTestCase2<Edi
 
     private Cursor queryTestStream() {
         return getInstrumentation().getContext().getContentResolver()
-                .query(StreamsTable.CONTENT_URI, null, StreamsTable.FIELD_URL + "=?",
-                        new String[]{TEST_URL}, null);
+                .query(StreamsTable.CONTENT_URI, null,
+                        TEST_SELECTION, null, null);
     }
 
     private void invokeActionItem(final int id) {

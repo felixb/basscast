@@ -4,27 +4,27 @@ import android.os.AsyncTask;
 import android.util.Log;
 
 import java.io.IOException;
-import java.util.List;
 
+import de.ub0r.android.basscast.model.MimeType;
 import de.ub0r.android.basscast.model.Stream;
 
 /**
  * @author flx
  */
-public class FetchTask extends AsyncTask<Void, Void, List<Stream>> {
+public class FetchMimeTypeTask extends AsyncTask<Void, Void, MimeType> {
 
-    private static final String TAG = "FetchTask";
+    private static final String TAG = "FetchMimeTypeTask";
 
     private final StreamFetcher mFetcher;
 
-    private final Stream mParentStream;
+    private final Stream mStream;
 
     private final FetcherCallbacks mListener;
 
-    public FetchTask(final StreamFetcher fetcher, final Stream parentStream,
-            final FetcherCallbacks listener) {
+    public FetchMimeTypeTask(final StreamFetcher fetcher, final Stream stream,
+                             final FetcherCallbacks listener) {
         mFetcher = fetcher;
-        mParentStream = parentStream;
+        mStream = stream;
         mListener = listener;
     }
 
@@ -36,9 +36,9 @@ public class FetchTask extends AsyncTask<Void, Void, List<Stream>> {
     }
 
     @Override
-    protected List<Stream> doInBackground(final Void... voids) {
+    protected MimeType doInBackground(final Void... voids) {
         try {
-            return mFetcher.fetch(mParentStream);
+            return mFetcher.fetchMimeType(mStream.getUrl());
         } catch (IOException e) {
             Log.e(TAG, "Error fetching streams", e);
             return null;
@@ -46,14 +46,14 @@ public class FetchTask extends AsyncTask<Void, Void, List<Stream>> {
     }
 
     @Override
-    protected void onPostExecute(final List<Stream> streams) {
-        if (streams == null) {
+    protected void onPostExecute(final MimeType mimeType) {
+        if (mimeType == null) {
             if (mListener != null) {
                 mListener.onFetchFailed();
             }
         } else {
-            mFetcher.insert(mParentStream, streams);
             if (mListener != null) {
+                mStream.setMimeType(mimeType);
                 mListener.onFetchFinished();
             }
         }

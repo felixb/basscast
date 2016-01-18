@@ -15,6 +15,7 @@
     <string name="mimeType_hint">Mime Type</string>
     <string name="missing_mandatory_parameter">Missing mandatory parameter</string>
     <string name="unsupported_mime_type">Unsupported mime type</string>
+    <string name="error_fetching_mime_type">Error fetching mime type</string>
     <string name="invalid_url">Invalid URL</string>
     <string name="empty_streams_title">Empty stream list</string>
     <string name="empty_streams">Add streams by tapping on the + button</string>

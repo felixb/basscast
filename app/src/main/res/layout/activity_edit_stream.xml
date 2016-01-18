@@ -24,10 +24,4 @@
             android:inputType="textUri"
             android:hint="@string/url_hint"/>
 
-    <EditText
-            android:id="@+id/mimeType"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="@string/mimeType_hint"/>
-
 </LinearLayout>

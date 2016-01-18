@@ -21,6 +21,8 @@ public class MimeType {
         EXTENSIONS.put(".jsp", new MimeType("text/html"));
         EXTENSIONS.put(".asp", new MimeType("text/html"));
         EXTENSIONS.put(".mp3", new MimeType("audio/mp3"));
+        EXTENSIONS.put(".ogg", new MimeType("audio/ogg"));
+        EXTENSIONS.put(".wma", new MimeType("audio/wma"));
         EXTENSIONS.put(".mp4", new MimeType("video/mp4"));
         EXTENSIONS.put(".png", new MimeType("image/png"));
         EXTENSIONS.put(".gif", new MimeType("image/gif"));

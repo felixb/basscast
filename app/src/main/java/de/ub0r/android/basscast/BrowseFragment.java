@@ -21,13 +21,13 @@ import android.widget.TextView;
 import butterknife.Bind;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
-import de.ub0r.android.basscast.fetcher.FetchTask;
+import de.ub0r.android.basscast.fetcher.FetcherCallbacks;
 import de.ub0r.android.basscast.model.Stream;
 import de.ub0r.android.basscast.model.StreamsTable;
 
 public class BrowseFragment extends Fragment
         implements LoaderManager.LoaderCallbacks<Cursor>, BrowseActivity.OnStateChangeListener,
-        FetchTask.FetcherCallbacks {
+        FetcherCallbacks {
 
     class StreamHolder extends RecyclerView.ViewHolder implements View.OnClickListener,
             PopupMenu.OnMenuItemClickListener {

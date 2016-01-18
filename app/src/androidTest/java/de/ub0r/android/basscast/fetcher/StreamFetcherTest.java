@@ -105,6 +105,7 @@ public class StreamFetcherTest extends AndroidTestCase {
 
         final StreamFetcher fetcher = new StreamFetcher(getContext());
         assertEquals("text/html", fetcher.fetchMimeType(server.url("/").toString()).getMimeType());
+        server.shutdown();
     }
 
     public void testInsert() {

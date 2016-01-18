@@ -149,6 +149,10 @@ public class Stream {
         }
     }
 
+    public void setMimeType(final MimeType mimeType) {
+        mMimeType = mimeType;
+    }
+
     public void setMimeType(final String mimeType) {
         if (mimeType == null) {
             mMimeType = null;

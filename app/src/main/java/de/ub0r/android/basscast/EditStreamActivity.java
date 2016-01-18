@@ -1,5 +1,7 @@
 package de.ub0r.android.basscast;
 
+import android.app.AlertDialog;
+import android.app.Dialog;
 import android.content.ContentValues;
 import android.content.Intent;
 import android.database.Cursor;
@@ -12,9 +14,13 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.EditText;
+import android.widget.Toast;
 
 import butterknife.Bind;
 import butterknife.ButterKnife;
+import de.ub0r.android.basscast.fetcher.FetchMimeTypeTask;
+import de.ub0r.android.basscast.fetcher.FetcherCallbacks;
+import de.ub0r.android.basscast.fetcher.StreamFetcher;
 import de.ub0r.android.basscast.model.MimeType;
 import de.ub0r.android.basscast.model.Stream;
 import de.ub0r.android.basscast.model.StreamsTable;
@@ -31,16 +37,17 @@ public class EditStreamActivity extends AppCompatActivity {
     @Bind(R.id.url)
     EditText mUrlView;
 
-    @Bind(R.id.mimeType)
-    EditText mMimeTypeView;
-
     private Stream mStream;
+
+    private StreamFetcher mFetcher;
 
     @Override
     protected void onCreate(final Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_edit_stream);
         ButterKnife.bind(this);
+
+        mFetcher = new StreamFetcher(this);
 
         if (savedInstanceState != null) {
             mStream = new Stream(savedInstanceState.getBundle(ARG_STREAM));
@@ -58,7 +65,7 @@ public class EditStreamActivity extends AppCompatActivity {
 
     @Override
     public void onSaveInstanceState(final Bundle outState,
-            final PersistableBundle outPersistentState) {
+                                    final PersistableBundle outPersistentState) {
         outState.putBundle(ARG_STREAM, mStream.toBundle());
         super.onSaveInstanceState(outState, outPersistentState);
     }
@@ -76,12 +83,7 @@ public class EditStreamActivity extends AppCompatActivity {
     public boolean onOptionsItemSelected(final MenuItem item) {
         switch (item.getItemId()) {
             case R.id.action_save:
-                try {
-                    saveStream();
-                    finish();
-                } catch (IllegalArgumentException e) {
-                    Log.e(TAG, "saving stream failed");
-                }
+                saveAndFinish();
                 return true;
             case R.id.action_delete:
                 StreamUtils.deleteStream(this, mStream);
@@ -92,51 +94,114 @@ public class EditStreamActivity extends AppCompatActivity {
         }
     }
 
+    private void saveAndFinish() {
+        try {
+            saveStream();
+            finish();
+        } catch (IllegalArgumentException e) {
+            Log.e(TAG, "Saving stream failed", e);
+        }
+    }
+
     private void restoreViewsFromStream() {
         mTitleView.setText(mStream.getTitle());
         mUrlView.setText(mStream.getUrl());
-        mMimeTypeView.setText(mStream.getMimeType());
     }
 
     private void storeStreamFromViews() {
-        boolean valid = checkFields();
         mStream.setTitle(mTitleView.getText().toString());
-        mStream.setUrl(mUrlView.getText().toString());
-        mStream.setMimeType(mMimeTypeView.getText().toString());
-
-        if (!valid) {
-            throw new IllegalArgumentException("input checks failed");
+        final String newUrl = mUrlView.getText().toString();
+        if (!newUrl.equals(mStream.getUrl())) {
+            mStream.setUrl(newUrl);
+            mStream.setMimeType((MimeType) null);
         }
+        checkStream();
     }
 
-    private boolean checkFields() {
-        boolean result = true;
-        if (TextUtils.isEmpty(mTitleView.getText())) {
+    private void checkStream() {
+        boolean valid = true;
+
+        if (TextUtils.isEmpty(mStream.getTitle())) {
+            Log.w(TAG, "Missing title");
             mTitleView.setError(getString(R.string.missing_mandatory_parameter));
-            result = false;
+            valid = false;
         }
 
-        if (TextUtils.isEmpty(mUrlView.getText())) {
+        String url = mStream.getUrl();
+        if (TextUtils.isEmpty(url)) {
+            Log.w(TAG, "Missing url");
             mUrlView.setError(getString(R.string.missing_mandatory_parameter));
-            result = false;
+            valid = false;
         } else {
-            final Uri uri = Uri.parse(mUrlView.getText().toString());
+            final Uri uri = Uri.parse(url);
             if (!"http".equals(uri.getScheme())
                     && !"https".equals(uri.getScheme())) {
+                Log.w(TAG, "Invalid url");
                 mUrlView.setError(getString(R.string.invalid_url));
-                result = false;
+                valid = false;
+            } else if (mStream.getMimeType() == null) {
+                fetchMimeType();
             }
         }
 
-        if (TextUtils.isEmpty(mMimeTypeView.getText())) {
-            mMimeTypeView.setError(getString(R.string.missing_mandatory_parameter));
-            result = false;
-        } else if (!new MimeType(mMimeTypeView.getText().toString()).isSupported()) {
-            mMimeTypeView.setError(getString(R.string.unsupported_mime_type));
-            result = false;
+        if (mStream.getMimeType() == null) {
+            Log.w(TAG, "Null mimeType");
+            mUrlView.setError(getString(R.string.error_fetching_mime_type));
+            valid = false;
+        } else if (!mStream.isSupported()) {
+            Log.w(TAG, "Unsupported mimeType: " + mStream.getMimeType());
+            mUrlView.setError(getString(R.string.unsupported_mime_type));
+            valid = false;
         }
 
-        return result;
+        if (!valid) {
+            throw new IllegalArgumentException("Input checks failed");
+        }
+    }
+
+    private void fetchMimeType() {
+        String url = mStream.getUrl();
+        mStream.setMimeType(MimeType.guessMimeType(url));
+
+        if (mStream.getMimeType() == null) {
+            Log.d(TAG, "Need to fetch mimeType with AsyncTask");
+
+            // fetch unguessable
+            new FetchMimeTypeTask(mFetcher, mStream, new FetcherCallbacks() {
+
+                private AlertDialog mDialog;
+
+                @Override
+                public void onFetchStarted() {
+                    Log.d(TAG, "Start fetching mimeType");
+                    mDialog = new AlertDialog.Builder(EditStreamActivity.this)
+                            .setMessage(R.string.loading)
+                            .setCancelable(true)
+                            .create();
+                    mDialog.show();
+                }
+
+                @Override
+                public void onFetchFinished() {
+                    Log.i(TAG, "Fetched mimeType: " + mStream.getMimeType());
+                    saveAndFinish();
+                    try {
+                        mDialog.dismiss();
+                    } catch (IllegalArgumentException e) {
+                        Log.e(TAG, "Failed closing dialog when finishing activity", e);
+                    }
+                }
+
+                @Override
+                public void onFetchFailed() {
+                    Log.e(TAG, "Failed fetching mimeType");
+                    mDialog.dismiss();
+                    Toast.makeText(EditStreamActivity.this,
+                            R.string.error_fetching_mime_type, Toast.LENGTH_LONG).show();
+                }
+            }).execute((Void) null);
+            throw new IllegalArgumentException("Fetching mime type in AsyncTask");
+        }
     }
 
     private void saveStream() {
