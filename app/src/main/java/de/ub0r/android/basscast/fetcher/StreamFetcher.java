@@ -14,6 +14,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import de.ub0r.android.basscast.StreamUtils;
 import de.ub0r.android.basscast.model.MimeType;
 import de.ub0r.android.basscast.model.Stream;
 import de.ub0r.android.basscast.model.StreamsTable;
@@ -61,7 +62,7 @@ public class StreamFetcher {
         // remove these streams
         existingStreams.removeAll(deletedStreams);
         for (Stream oldStream : deletedStreams) {
-            cr.delete(oldStream.getUri(), null, null);
+            StreamUtils.deleteStream(mContext, oldStream);
         }
 
         // insert/update new streams

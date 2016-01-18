@@ -26,6 +26,10 @@ public class Stream {
     @SimpleSQLColumn("parent_id")
     private long parentId = -1;
 
+    @SimpleSQLColumn("breadcrumbs")
+    // ";..;(parent-of-parent.id);(parent.id);"
+    private String breadcrumbs;
+
     @SimpleSQLColumn("updated")
     private long updated = System.currentTimeMillis();
 
@@ -56,8 +60,10 @@ public class Stream {
         this(url, title, mimeType);
         if (parentStream.baseId < 0) {
             this.baseId = parentStream.id;
+            this.breadcrumbs = ";" + parentStream.id + ";";
         } else {
             this.baseId = parentStream.baseId;
+            this.breadcrumbs = parentStream.breadcrumbs + parentStream.id + ";";
         }
         this.parentId = parentStream.id;
     }
@@ -66,6 +72,7 @@ public class Stream {
         this.id = bundle.getLong(StreamsTable.FIELD__ID, -1);
         this.baseId = bundle.getLong(StreamsTable.FIELD_BASE_ID, -1);
         this.parentId = bundle.getLong(StreamsTable.FIELD_PARENT_ID, -1);
+        this.breadcrumbs = bundle.getString(StreamsTable.FIELD_BREADCRUMBS);
         this.updated = bundle.getLong(StreamsTable.FIELD_UPDATED, System.currentTimeMillis());
         this.url = bundle.getString(StreamsTable.FIELD_URL);
         this.title = bundle.getString(StreamsTable.FIELD_TITLE);
@@ -100,6 +107,14 @@ public class Stream {
 
     public void setParentId(final long parentId) {
         this.parentId = parentId;
+    }
+
+    public String getBreadcrumbs() {
+        return breadcrumbs;
+    }
+
+    public void setBreadcrumbs(final String breadcrumbs) {
+        this.breadcrumbs = breadcrumbs;
     }
 
     public long getUpdated() {
@@ -161,6 +176,7 @@ public class Stream {
         b.putLong(StreamsTable.FIELD__ID, id);
         b.putLong(StreamsTable.FIELD_BASE_ID, baseId);
         b.putLong(StreamsTable.FIELD_PARENT_ID, parentId);
+        b.putString(StreamsTable.FIELD_BREADCRUMBS, breadcrumbs);
         b.putLong(StreamsTable.FIELD_UPDATED, updated);
         b.putString(StreamsTable.FIELD_URL, url);
         b.putString(StreamsTable.FIELD_TITLE, title);

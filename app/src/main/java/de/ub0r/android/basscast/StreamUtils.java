@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.Intent;
 
 import de.ub0r.android.basscast.model.Stream;
+import de.ub0r.android.basscast.model.StreamsTable;
 
 /**
  * @author flx
@@ -20,6 +21,10 @@ public class StreamUtils {
     }
 
     public static void deleteStream(final Context context, final Stream stream) {
-        context.getContentResolver().delete(stream.getUri(), null, null);
+        final String id = String.valueOf(stream.getId());
+        context.getContentResolver().delete(StreamsTable.CONTENT_URI,
+                StreamsTable.FIELD__ID + "=? or "
+                        + StreamsTable.FIELD_BREADCRUMBS + " like '%'||?||'%'",
+                new String[]{id, id});
     }
 }

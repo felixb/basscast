@@ -1,5 +1,6 @@
 package de.ub0r.android.basscast.fetcher;
 
+import android.content.ContentResolver;
 import android.database.Cursor;
 import android.test.AndroidTestCase;
 
@@ -124,14 +125,31 @@ public class StreamFetcherTest extends AndroidTestCase {
         final StreamFetcher fetcher = new StreamFetcher(getContext());
         fetcher.insert(parent, list);
 
-        Cursor cursor = getContext().getContentResolver().query(
+        ContentResolver resolver = getContext().getContentResolver();
+        Cursor cursor = resolver.query(
                 StreamsTable.CONTENT_URI, null,
-                StreamsTable.FIELD_URL + " like '%example.org%'", null, null);
+                StreamsTable.FIELD_PARENT_ID + "=?", new String[]{String.valueOf(parent.getId())},
+                null);
         assertNotNull(cursor);
         List<Stream> streams = StreamsTable.getRows(cursor, true);
         assertEquals(2, streams.size());
         assertEquals(stream0.getUrl(), streams.get(0).getUrl());
         assertEquals(stream1.getUrl(), streams.get(1).getUrl());
+
+        // update local representations with real ids and stuff
+        stream0 = streams.get(0);
+        stream1 = streams.get(1);
+
+        // insert children
+        List<Stream> list0 = new ArrayList<>();
+        list0.add(new Stream(stream0, "http://example.org/stream/foo", "Foo stream",
+                new MimeType("audio/*")));
+        fetcher.insert(stream0, list0);
+
+        List<Stream> list1 = new ArrayList<>();
+        list1.add(new Stream(stream1, "http://example.org/other-stream/bar", "Bar stream",
+                new MimeType("audio/*")));
+        fetcher.insert(stream1, list1);
 
         // insert updated list
         stream0.setUpdated(System.currentTimeMillis());
@@ -142,14 +160,33 @@ public class StreamFetcherTest extends AndroidTestCase {
 
         fetcher.insert(parent, list);
 
-        cursor = getContext().getContentResolver().query(
+        cursor = resolver.query(
                 StreamsTable.CONTENT_URI, null,
-                StreamsTable.FIELD_URL + " like '%example.org%'", null, null);
+                StreamsTable.FIELD_PARENT_ID + "=?", new String[]{String.valueOf(parent.getId())},
+                null);
         assertNotNull(cursor);
         streams = StreamsTable.getRows(cursor, true);
         assertEquals(2, streams.size());
         assertEquals(stream0.getUrl(), streams.get(0).getUrl());
         assertEquals(stream0.getTitle(), streams.get(0).getTitle());
         assertEquals(stream2.getUrl(), streams.get(1).getUrl());
+
+        // assert stream0 children are still available
+        cursor = resolver.query(
+                StreamsTable.CONTENT_URI, null,
+                StreamsTable.FIELD_PARENT_ID + "=?", new String[]{String.valueOf(stream0.getId())},
+                null);
+        assertNotNull(cursor);
+        assertEquals(1, cursor.getCount());
+        assertEquals(list0.get(0).getUrl(), StreamsTable.getRows(cursor, true).get(0).getUrl());
+
+        // assert stream1 children are gone as well
+        cursor = resolver.query(
+                StreamsTable.CONTENT_URI, null,
+                StreamsTable.FIELD_PARENT_ID + "=?", new String[]{String.valueOf(stream1.getId())},
+                null);
+        assertNotNull(cursor);
+        assertEquals(0, cursor.getCount());
+        cursor.close();
     }
 }
