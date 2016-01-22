@@ -196,6 +196,8 @@ public class Stream {
         return "Stream: " + toBundle();
     }
 
+    public boolean isBaseStream() { return parentId < 0; }
+
     public boolean isPlayable() {
         return mMimeType != null && mMimeType.isPlayable();
     }

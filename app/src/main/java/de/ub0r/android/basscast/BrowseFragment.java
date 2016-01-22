@@ -59,6 +59,13 @@ public class BrowseFragment extends Fragment
             PopupMenu menu = new PopupMenu(getContext(), view);
             menu.inflate(R.menu.menu_browse_context);
             menu.setOnMenuItemClickListener(this);
+            if (!mStream.isBaseStream()) {
+                menu.getMenu().removeItem(R.id.action_edit);
+                menu.getMenu().removeItem(R.id.action_delete);
+            }
+            if (!mStream.isPlayable()) {
+                menu.getMenu().removeItem(R.id.action_play_locally);
+            }
             menu.show();
         }
 
@@ -71,6 +78,9 @@ public class BrowseFragment extends Fragment
                 case R.id.action_delete:
                     StreamUtils.deleteStream(getContext(), mStream);
                     restartLoader();
+                    return true;
+                case R.id.action_play_locally:
+                    getBrowseActivity().playStreamLocally(mStream, true);
                     return true;
                 default:
                     return false;
@@ -85,7 +95,8 @@ public class BrowseFragment extends Fragment
             mStream = stream;
             mTitleView.setText(stream.getTitle());
             mUrlView.setText(stream.getUrl());
-            mContextButton.setVisibility(stream.getParentId() < 0 ? View.VISIBLE : View.GONE);
+            mContextButton.setVisibility(stream.isBaseStream() || stream.isPlayable()
+                    ? View.VISIBLE : View.GONE);
         }
     }
 
