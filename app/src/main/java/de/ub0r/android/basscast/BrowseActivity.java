@@ -17,6 +17,7 @@ import android.animation.ObjectAnimator;
 import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.VisibleForTesting;
@@ -492,14 +493,28 @@ public class BrowseActivity extends AppCompatActivity {
 
     public void onStreamClick(final Stream stream) {
         if (stream.isPlayable()) {
-            playStream(stream);
+            if (mApplicationStarted) {
+                castStream(stream);
+            } else {
+                playStreamLocally(stream, false);
+            }
         } else {
             showStream(stream);
         }
     }
 
-    void playStream(final Stream stream) {
-        Toast.makeText(this, "Playing stream: " + stream.getTitle(), Toast.LENGTH_LONG).show();
+    void playStreamLocally(final Stream stream, final boolean intentionally) {
+        final int resId = intentionally
+                ? R.string.playing_stream_on_this_device
+                : R.string.playing_stream_on_this_device_not_connected;
+        Toast.makeText(this, getString(resId, stream.getTitle()), Toast.LENGTH_LONG).show();
+        startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(stream.getUrl())));
+    }
+
+    void castStream(final Stream stream) {
+        Toast.makeText(this,
+                getString(R.string.casting_stream, stream.getTitle(), mSelectedDevice.getFriendlyName()),
+                Toast.LENGTH_LONG).show();
         MediaInfo mediaInfo = stream.getMediaMetadata();
 
         try {
@@ -516,8 +531,10 @@ public class BrowseActivity extends AppCompatActivity {
                     });
         } catch (IllegalStateException e) {
             Log.e(TAG, "Problem occurred with media during loading", e);
+            // TODO show error to user
         } catch (Exception e) {
             Log.e(TAG, "Problem opening media during loading", e);
+            // TODO show error to user
         }
     }
 

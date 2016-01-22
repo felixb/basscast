@@ -6,6 +6,9 @@
     <string name="action_save">Save</string>
     <string name="action_delete">Delete</string>
     <string name="action_play">Play</string>
+    <string name="casting_stream">Casting %1$s on %2$s</string>
+    <string name="playing_stream_on_this_device">Playing %1$s on this device</string>
+    <string name="playing_stream_on_this_device_not_connected">Not connected to Chromecast\nPlaying %1$s on this device</string>
     <string name="title_hint">Title</string>
     <string name="url_hint">Url</string>
     <string name="mimeType_hint">Mime Type</string>
