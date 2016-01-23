@@ -83,10 +83,9 @@ public class EditStreamActivity extends AppCompatActivity implements
     }
 
     @Override
-    public void onSaveInstanceState(final Bundle outState,
-                                    final PersistableBundle outPersistentState) {
+    public void onSaveInstanceState(final Bundle outState) {
         outState.putBundle(ARG_STREAM, mStream.toBundle());
-        super.onSaveInstanceState(outState, outPersistentState);
+        super.onSaveInstanceState(outState);
     }
 
     @Override
