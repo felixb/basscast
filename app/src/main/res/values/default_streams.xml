@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string-array name="default_streams">
-        <item>http://www.tagesschau.de/sendung/tagesschau/index.html?title=Tageschau%2020:00&amp;mime_type=text/html</item>
-        <item>http://radioeins.de/stream?title=radio%20eins&amp;mime_type=audio/mp3</item>
+        <item>http://bbcmedia.ic.llnwd.net/stream/bbcmedia_radio1_mf_p?title=BBC%20Radio%201&amp;mime_type=audio/mp3</item>
+        <item>http://203.150.225.71:8610/;title=COOLfahrenheit%2093&amp;mime_type=audio/mp3</item>
     </string-array>
 </resources>
