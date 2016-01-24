@@ -15,9 +15,12 @@
     <string name="mimeType_hint">Mime Type</string>
     <string name="missing_mandatory_parameter">Missing mandatory parameter</string>
     <string name="unsupported_mime_type">Unsupported mime type</string>
-    <string name="error_fetching_mime_type">Error fetching mime type</string>
     <string name="invalid_url">Invalid URL</string>
     <string name="empty_streams_title">Empty stream list</string>
     <string name="empty_streams">Add streams by tapping on the + button</string>
     <string name="loading">Loading…</string>
+    <string name="error_fetching_mime_type">Problem fetching mime type</string>
+    <string name="error_fetching_stream">Problem fetching stream content</string>
+    <string name="error_loading_media">Problem occurred with media during loading</string>
+    <string name="error_opening_media">Problem opening media during loading</string>
 </resources>

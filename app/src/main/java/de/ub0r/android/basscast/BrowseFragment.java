@@ -17,6 +17,7 @@ import android.view.ViewGroup;
 import android.widget.ImageButton;
 import android.widget.PopupMenu;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import butterknife.Bind;
 import butterknife.ButterKnife;
@@ -261,7 +262,8 @@ public class BrowseFragment extends Fragment
     public void onFetchFailed() {
         mIsLoading = false;
         updateViewsVisibility();
-        // TODO
+        Toast.makeText(getContext(), R.string.error_fetching_stream, Toast.LENGTH_LONG).show();
+        // TODO alow user to refetch. -> snackbar?
     }
 
     private void updateViewsVisibility() {

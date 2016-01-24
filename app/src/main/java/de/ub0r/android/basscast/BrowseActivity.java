@@ -1,17 +1,5 @@
 package de.ub0r.android.basscast;
 
-import com.google.android.gms.cast.Cast;
-import com.google.android.gms.cast.CastDevice;
-import com.google.android.gms.cast.CastMediaControlIntent;
-import com.google.android.gms.cast.MediaInfo;
-import com.google.android.gms.cast.MediaMetadata;
-import com.google.android.gms.cast.MediaStatus;
-import com.google.android.gms.cast.RemoteMediaPlayer;
-import com.google.android.gms.common.ConnectionResult;
-import com.google.android.gms.common.api.GoogleApiClient;
-import com.google.android.gms.common.api.ResultCallback;
-import com.google.android.gms.common.api.Status;
-
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.annotation.SuppressLint;
@@ -37,6 +25,18 @@ import android.view.View;
 import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import com.google.android.gms.cast.Cast;
+import com.google.android.gms.cast.CastDevice;
+import com.google.android.gms.cast.CastMediaControlIntent;
+import com.google.android.gms.cast.MediaInfo;
+import com.google.android.gms.cast.MediaMetadata;
+import com.google.android.gms.cast.MediaStatus;
+import com.google.android.gms.cast.RemoteMediaPlayer;
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.common.api.ResultCallback;
+import com.google.android.gms.common.api.Status;
 
 import java.io.IOException;
 
@@ -88,7 +88,7 @@ public class BrowseActivity extends AppCompatActivity {
         public void onConnected(Bundle connectionHint) {
             if (mWaitingForReconnect) {
                 mWaitingForReconnect = false;
-                reconnectChannels();
+                // TODO reconnec channels
             } else if (mSessionId != null && mRouteInfo != null) {
                 joinSession();
             } else {
@@ -228,7 +228,6 @@ public class BrowseActivity extends AppCompatActivity {
             if (mApiClient != null) {
                 Log.d(TAG, "onApplicationStatusChanged: "
                         + Cast.CastApi.getApplicationStatus(mApiClient));
-                // TODO
             }
         }
 
@@ -236,7 +235,6 @@ public class BrowseActivity extends AppCompatActivity {
         public void onVolumeChanged() {
             if (mApiClient != null) {
                 Log.d(TAG, "onVolumeChanged: " + Cast.CastApi.getVolume(mApiClient));
-                // TODO
             }
         }
 
@@ -531,10 +529,10 @@ public class BrowseActivity extends AppCompatActivity {
                     });
         } catch (IllegalStateException e) {
             Log.e(TAG, "Problem occurred with media during loading", e);
-            // TODO show error to user
+            Toast.makeText(this, R.string.error_loading_media, Toast.LENGTH_LONG).show();
         } catch (Exception e) {
             Log.e(TAG, "Problem opening media during loading", e);
-            // TODO show error to user
+            Toast.makeText(this, R.string.error_opening_media, Toast.LENGTH_LONG).show();
         }
     }
 
@@ -642,9 +640,5 @@ public class BrowseActivity extends AppCompatActivity {
                 .apply();
 
         updateControlViews(true);
-    }
-
-    private void reconnectChannels() {
-        // TODO
     }
 }
