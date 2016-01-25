@@ -5,6 +5,7 @@
     <string name="action_edit">Edit</string>
     <string name="action_save">Save</string>
     <string name="action_delete">Delete</string>
+    <string name="action_context_menu">Context menu</string>
     <string name="action_play">Play</string>
     <string name="action_play_locally">Play locally</string>
     <string name="casting_stream">Casting %1$s on %2$s</string>

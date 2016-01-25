@@ -5,5 +5,8 @@
     <dimen name="fab_margin">16dp</dimen>
     <dimen name="controls_elevation">16dp</dimen>
     <dimen name="controls_height">48dp</dimen>
+    <dimen name="list_item_stream_height">72dp</dimen>
+    <dimen name="list_item_stream_margin_horizontal">8dp</dimen>
+    <dimen name="list_item_stream_margin_vertical">8dp</dimen>
     <dimen name="loading_scrollbar_size">64dp</dimen>
 </resources>

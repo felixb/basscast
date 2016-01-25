@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string-array name="default_streams">
+    <string-array name="default_streams" formatted="false">
         <item>http://bbcmedia.ic.llnwd.net/stream/bbcmedia_radio1_mf_p?title=BBC%20Radio%201&amp;mime_type=audio/mp3</item>
         <item>http://203.150.225.71:8610/;title=COOLfahrenheit%2093&amp;mime_type=audio/mp3</item>
     </string-array>

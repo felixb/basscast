@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string-array name="default_streams">
+    <string-array name="default_streams" formatted="false">
         <item>http://www.tagesschau.de/sendung/tagesschau/index.html?title=Tageschau%2020:00&amp;mime_type=text/html</item>
         <item>http://radioeins.de/stream?title=radio%20eins&amp;mime_type=audio/mp3</item>
     </string-array>

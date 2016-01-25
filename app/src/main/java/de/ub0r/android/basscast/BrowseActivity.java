@@ -8,6 +8,7 @@ import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
+import android.support.annotation.StyleRes;
 import android.support.annotation.VisibleForTesting;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.FragmentTransaction;
@@ -200,6 +201,10 @@ public class BrowseActivity extends AppCompatActivity {
     private static final String PREFS_ROUTE_ID = "route_id";
 
     private static final String PREFS_SESSION_ID = "session_id";
+
+    private static final int MAX_CONTROLS_TITLE_LENGTH_LARGE = 20;
+
+    private static final int MAX_CONTROLS_TITLE_LENGTH_MEDIUM = 24;
 
     private static final double VOLUME_INCREMENT = 0.05;
 
@@ -556,7 +561,10 @@ public class BrowseActivity extends AppCompatActivity {
                 || MediaStatus.PLAYER_STATE_PAUSED == status.getPlayerState());
 
         if (showControls) {
-            mTitleView.setText(info.getMetadata().getString(MediaMetadata.KEY_TITLE));
+            final String title = info.getMetadata().getString(MediaMetadata.KEY_TITLE);
+            mTitleView.setText(title);
+            //noinspection deprecation
+            mTitleView.setTextAppearance(this, getControlsTitleStyle(title));
             if (MediaStatus.PLAYER_STATE_PAUSED == status.getPlayerState()) {
                 mPlayView.setImageResource(R.drawable.ic_av_play_ripple);
                 mStopView.setVisibility(View.VISIBLE);
@@ -571,6 +579,18 @@ public class BrowseActivity extends AppCompatActivity {
         } else {
             setControlsPosition(mControlsHeight, showAnimations);
         }
+    }
+
+    @StyleRes
+    private int getControlsTitleStyle(@NonNull final String title) {
+        final int length = title.length();
+        if (length >= MAX_CONTROLS_TITLE_LENGTH_LARGE) {
+            return android.R.style.TextAppearance_Large;
+        }
+        if (length >= MAX_CONTROLS_TITLE_LENGTH_MEDIUM) {
+            return android.R.style.TextAppearance_Medium;
+        }
+        return android.R.style.TextAppearance_Small;
     }
 
     private void setControlsPosition(final float translationY, final boolean showAnimations) {
