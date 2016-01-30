@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string formatted="false" name="app_name">Bass Cast</string>
+    <string formatted="false" name="short_description">Bass Cast plays your favorite internet radio on your Google Cast device.</string>
+    <string formatted="false" name="full_description_app">It\'s super easy to cast your favorite internet radio or video stream to your local Google Cast/Chromecast device.\nThe app stores a list of your favorite streams. Just select one to play it.</string>
+    <string formatted="false" name="full_description_oss">This app is open source software build in spare time. Adding bad comments in market won\'t help much to make it better.\nPlease add your issues with this app on the app\'s website.</string>
+</resources>
