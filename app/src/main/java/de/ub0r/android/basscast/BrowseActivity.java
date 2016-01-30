@@ -622,13 +622,13 @@ public class BrowseActivity extends AppCompatActivity {
             AnimatorSet anim = new AnimatorSet();
             anim
                     .play(ObjectAnimator.ofFloat(mControlsLayout, View.TRANSLATION_Y,
-                            translationY))
-                    .with(ObjectAnimator.ofFloat(mFloatingActionButtonView, View.TRANSLATION_Y,
-                            translationY + mControlsHeight * -1));
+                            translationY));
+                    //.with(ObjectAnimator.ofFloat(mFloatingActionButtonView, View.TRANSLATION_Y,
+                    //        translationY + mControlsHeight * -1));
             anim.start();
         } else {
             mControlsLayout.setTranslationY(translationY);
-            mFloatingActionButtonView.setTranslationY(translationY + mControlsHeight * -1);
+            //mFloatingActionButtonView.setTranslationY(translationY + mControlsHeight * -1);
         }
     }
 

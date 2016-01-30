@@ -5,6 +5,6 @@
         android:id="@+id/fragment_container"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        app:layout_behavior="@string/appbar_scrolling_view_behavior"
+        app:layout_behavior="de.ub0r.android.basscast.ControlsAwareScrollingViewBehavior"
         tools:layout="@layout/fragment_browse">
 </FrameLayout>
