@@ -27,6 +27,9 @@ import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.android.gms.ads.AdListener;
+import com.google.android.gms.ads.AdRequest;
+import com.google.android.gms.ads.InterstitialAd;
 import com.google.android.gms.cast.Cast;
 import com.google.android.gms.cast.CastDevice;
 import com.google.android.gms.cast.CastMediaControlIntent;
@@ -222,6 +225,8 @@ public class BrowseActivity extends AppCompatActivity {
 
     private OnStateChangeListener mOnStateChangeListener;
 
+    InterstitialAd mInterstitialAd;
+
     private StreamFetcher mFetcher;
 
     @Bind(R.id.toolbar)
@@ -361,6 +366,16 @@ public class BrowseActivity extends AppCompatActivity {
 
         restoreRoute();
         updateControlViews(false);
+
+        mInterstitialAd = new InterstitialAd(this);
+        mInterstitialAd.setAdUnitId("ca-app-pub-1948477123608376/3415873285");
+        mInterstitialAd.setAdListener(new AdListener() {
+            @Override
+            public void onAdClosed() {
+                requestNewInterstitial();
+            }
+        });
+        requestNewInterstitial();
     }
 
     @Override
@@ -498,6 +513,9 @@ public class BrowseActivity extends AppCompatActivity {
         if (stream.isPlayable()) {
             if (mApplicationStarted) {
                 castStream(stream);
+                if (mInterstitialAd.isLoaded()) {
+                    mInterstitialAd.show();
+                }
             } else {
                 playStreamLocally(stream, false);
             }
@@ -549,6 +567,12 @@ public class BrowseActivity extends AppCompatActivity {
                 .addToBackStack(null)
                 .commit();
         new FetchTask(mFetcher, parentStream, fragment).execute((Void[]) null);
+    }
+
+    private void requestNewInterstitial() {
+        AdRequest adRequest = new AdRequest.Builder()
+                .build();
+        mInterstitialAd.loadAd(adRequest);
     }
 
     private void updateControlViews(final boolean showAnimations) {
