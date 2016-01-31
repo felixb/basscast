@@ -608,10 +608,10 @@ public class BrowseActivity extends AppCompatActivity {
     @StyleRes
     private int getControlsTitleStyle(@NonNull final String title) {
         final int length = title.length();
-        if (length >= MAX_CONTROLS_TITLE_LENGTH_LARGE) {
+        if (length <= MAX_CONTROLS_TITLE_LENGTH_LARGE) {
             return android.R.style.TextAppearance_Large;
         }
-        if (length >= MAX_CONTROLS_TITLE_LENGTH_MEDIUM) {
+        if (length <= MAX_CONTROLS_TITLE_LENGTH_MEDIUM) {
             return android.R.style.TextAppearance_Medium;
         }
         return android.R.style.TextAppearance_Small;
