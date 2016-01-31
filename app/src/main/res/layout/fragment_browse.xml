@@ -38,16 +38,16 @@
             android:layout_gravity="center"
             android:gravity="center"
             android:orientation="vertical">
+        <ProgressBar
+                android:layout_width="@dimen/loading_scrollbar_size"
+                android:layout_height="@dimen/loading_scrollbar_size"
+                android:layout_marginTop="@dimen/activity_vertical_margin"/>
 
         <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:textAppearance="?android:textAppearanceLarge"
                 android:text="@string/loading"/>
-        <ProgressBar
-                android:layout_width="@dimen/loading_scrollbar_size"
-                android:layout_height="@dimen/loading_scrollbar_size"
-                android:layout_marginTop="@dimen/activity_vertical_margin"/>
     </LinearLayout>
 
     <android.support.v7.widget.RecyclerView
