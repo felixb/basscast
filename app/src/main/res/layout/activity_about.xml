@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingBottom="@dimen/activity_vertical_margin"
+        android:paddingLeft="@dimen/activity_horizontal_margin"
+        android:paddingRight="@dimen/activity_horizontal_margin"
+        android:paddingTop="@dimen/activity_vertical_margin"
+        tools:context="de.ub0r.android.basscast.AboutActivity">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="@dimen/about_padding_vertical"
+            android:text="@string/full_description_app" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="@dimen/about_padding_vertical"
+            android:text="@string/full_description_oss" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="@dimen/about_padding_vertical"
+            android:text="@string/about_license" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/about_website" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="@dimen/about_padding_vertical"
+            android:layout_marginLeft="@dimen/about_padding_horizontal"
+            android:layout_marginStart="@dimen/about_padding_horizontal"
+            android:autoLink="web"
+            android:text="@string/about_website_url" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/about_used_libraries" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="@dimen/about_padding_horizontal"
+            android:layout_marginStart="@dimen/about_padding_horizontal"
+            android:autoLink="web"
+            android:text="@string/about_libraries_butterknife" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="@dimen/about_padding_horizontal"
+            android:layout_marginStart="@dimen/about_padding_horizontal"
+            android:autoLink="web"
+            android:text="@string/about_libraries_eucookieconsent" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="@dimen/about_padding_horizontal"
+            android:layout_marginStart="@dimen/about_padding_horizontal"
+            android:autoLink="web"
+            android:text="@string/about_libraries_jsoup" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="@dimen/about_padding_horizontal"
+            android:layout_marginStart="@dimen/about_padding_horizontal"
+            android:autoLink="web"
+            android:text="@string/about_libraries_okhttp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="@dimen/about_padding_horizontal"
+            android:layout_marginStart="@dimen/about_padding_horizontal"
+            android:autoLink="web"
+            android:text="@string/about_libraries_simple_sql_provider" />
+    </LinearLayout>
+</ScrollView>

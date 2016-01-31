@@ -390,6 +390,17 @@ public class BrowseActivity extends AppCompatActivity {
     }
 
     @Override
+    public boolean onOptionsItemSelected(final MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.action_about:
+                startActivity(new Intent(this, AboutActivity.class));
+                return true;
+            default:
+                return super.onOptionsItemSelected(item);
+        }
+    }
+
+    @Override
     public boolean dispatchKeyEvent(final KeyEvent event) {
         final int action = event.getAction();
         final int keyCode = event.getKeyCode();

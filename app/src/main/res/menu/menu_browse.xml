@@ -1,11 +1,17 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
-      xmlns:app="http://schemas.android.com/apk/res-auto"
-      xmlns:tools="http://schemas.android.com/tools"
-      tools:context="de.ub0r.android.basscast.BrowseActivity">
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:context="de.ub0r.android.basscast.BrowseActivity">
 
     <item
-            android:id="@+id/action_cast"
-            android:title="@string/action_cast"
-            app:actionProviderClass="android.support.v7.app.MediaRouteActionProvider"
-            app:showAsAction="always"/>
+        android:id="@+id/action_cast"
+        android:title="@string/action_cast"
+        app:actionProviderClass="android.support.v7.app.MediaRouteActionProvider"
+        app:showAsAction="always" />
+
+    <item
+        android:id="@+id/action_about"
+        android:title="@string/action_about"
+        app:showAsAction="never" />
+
 </menu>

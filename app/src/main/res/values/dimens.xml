@@ -9,6 +9,8 @@
     <dimen name="list_item_stream_margin_horizontal">8dp</dimen>
     <dimen name="list_item_stream_margin_vertical">8dp</dimen>
     <dimen name="loading_scrollbar_size">64dp</dimen>
+    <dimen name="about_padding_vertical">8dp</dimen>
+    <dimen name="about_padding_horizontal">8dp</dimen>
     <dimen name="eucookieconsent_padding_horizontal">8dp</dimen>
     <dimen name="eucookieconsent_elevation">16dp</dimen>
 </resources>

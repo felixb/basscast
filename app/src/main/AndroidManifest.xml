@@ -3,9 +3,12 @@
     package="de.ub0r.android.basscast">
 
     <uses-permission android:name="android.permission.INTERNET" />
-    <uses-permission android:name="android.permission.NFC"/>
-    <uses-permission android:name="android.permission.READ_PHONE_STATE"/>
-    <uses-feature android:name="android.hardware.nfc" android:required="false"/>
+    <uses-permission android:name="android.permission.NFC" />
+    <uses-permission android:name="android.permission.READ_PHONE_STATE" />
+
+    <uses-feature
+        android:name="android.hardware.nfc"
+        android:required="false" />
 
     <application
         android:name=".BassCastApplication"
@@ -25,17 +28,23 @@
             </intent-filter>
         </activity>
         <activity
-                android:name=".EditStreamActivity"
-                android:parentActivityName=".BrowseActivity">
+            android:name=".EditStreamActivity"
+            android:parentActivityName=".BrowseActivity">
             <intent-filter>
                 <action android:name="android.nfc.action.NDEF_DISCOVERED" />
+
                 <category android:name="android.intent.category.DEFAULT" />
+
                 <data
                     android:host="ext"
                     android:pathPrefix="/de.ub0r.android.basscast:stream"
                     android:scheme="vnd.android.nfc" />
             </intent-filter>
         </activity>
+
+        <activity
+            android:name=".AboutActivity"
+            android:parentActivityName=".BrowseActivity" />
 
         <provider
             android:name=".model.StreamProvider"
@@ -45,7 +54,6 @@
         <meta-data
             android:name="com.google.android.gms.version"
             android:value="@integer/google_play_services_version" />
-
     </application>
 
 </manifest>
