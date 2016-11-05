@@ -23,7 +23,10 @@ public class MimeType {
         EXTENSIONS.put(".mp3", new MimeType("audio/mp3"));
         EXTENSIONS.put(".ogg", new MimeType("audio/ogg"));
         EXTENSIONS.put(".wma", new MimeType("audio/wma"));
+        EXTENSIONS.put(".avi", new MimeType("video/avi"));
         EXTENSIONS.put(".mp4", new MimeType("video/mp4"));
+        EXTENSIONS.put(".mkv", new MimeType("video/mkv"));
+        EXTENSIONS.put(".webm", new MimeType("video/webm"));
         EXTENSIONS.put(".png", new MimeType("image/png"));
         EXTENSIONS.put(".gif", new MimeType("image/gif"));
         EXTENSIONS.put(".jpg", new MimeType("image/jpeg"));
