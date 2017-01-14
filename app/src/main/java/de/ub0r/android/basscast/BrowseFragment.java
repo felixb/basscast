@@ -56,7 +56,7 @@ public class BrowseFragment extends Fragment
         }
 
         @OnClick(R.id.action_context_menu)
-        void onPlayClick(final View view) {
+        void onPopupMenuClick(final View view) {
             PopupMenu menu = new PopupMenu(getContext(), view);
             menu.inflate(R.menu.menu_browse_context);
             menu.setOnMenuItemClickListener(this);
@@ -81,7 +81,7 @@ public class BrowseFragment extends Fragment
                     restartLoader();
                     return true;
                 case R.id.action_play_locally:
-                    getBrowseActivity().playStreamLocally(mStream, true);
+                    getBrowseActivity().playStreamLocally(mStream);
                     return true;
                 default:
                     return false;

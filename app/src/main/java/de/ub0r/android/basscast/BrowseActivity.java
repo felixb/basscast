@@ -528,17 +528,15 @@ public class BrowseActivity extends AppCompatActivity {
                     mInterstitialAd.show();
                 }
             } else {
-                playStreamLocally(stream, false);
+                Toast.makeText(this, R.string.error_not_connected, Toast.LENGTH_LONG).show();
             }
         } else {
             showStream(stream);
         }
     }
 
-    void playStreamLocally(final Stream stream, final boolean intentionally) {
-        final int resId = intentionally
-                ? R.string.playing_stream_on_this_device
-                : R.string.playing_stream_on_this_device_not_connected;
+    void playStreamLocally(final Stream stream) {
+        final int resId = R.string.playing_stream_on_this_device;
         Toast.makeText(this, getString(resId, stream.getTitle()), Toast.LENGTH_LONG).show();
         startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(stream.getUrl())));
     }
