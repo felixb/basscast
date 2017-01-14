@@ -139,8 +139,8 @@ public class EditStreamActivity extends AppCompatActivity implements
     }
 
     private void storeStreamFromViews() {
-        mStream.setTitle(mTitleView.getText().toString());
-        final String newUrl = mUrlView.getText().toString();
+        mStream.setTitle(mTitleView.getText().toString().trim());
+        final String newUrl = mUrlView.getText().toString().trim();
         if (!newUrl.equals(mStream.getUrl())) {
             mStream.setUrl(newUrl);
             mStream.setMimeType((MimeType) null);

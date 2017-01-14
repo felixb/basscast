@@ -90,10 +90,11 @@ public class StreamFetcher {
             return mimeType;
         }
 
-        final Response response = mHttpClient.newCall(new Request.Builder()
+        final Request request = new Request.Builder()
                 .head()
                 .url(url)
-                .build()).execute();
+                .build();
+        final Response response = mHttpClient.newCall(request).execute();
         String contentType = response.header("Content-Type");
         if (contentType == null) {
             return null;
