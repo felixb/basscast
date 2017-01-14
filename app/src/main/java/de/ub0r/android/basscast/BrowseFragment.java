@@ -117,7 +117,7 @@ public class BrowseFragment extends Fragment
 
         @Override
         public void onBindViewHolder(StreamHolder holder,
-                Cursor cursor) {
+                                     Cursor cursor) {
             holder.bindCursor(cursor);
         }
     }
@@ -174,8 +174,8 @@ public class BrowseFragment extends Fragment
 
     @Override
     public View onCreateView(final LayoutInflater inflater,
-            final ViewGroup container,
-            final Bundle savedInstanceState) {
+                             final ViewGroup container,
+                             final Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_browse, container, false);
         ButterKnife.bind(this, view);
 
@@ -201,6 +201,13 @@ public class BrowseFragment extends Fragment
     }
 
     @Override
+    public void onDestroyView() {
+        ButterKnife.unbind(this);
+        super.onDestroyView();
+    }
+
+
+    @Override
     public void onSaveInstanceState(final Bundle outState) {
         outState.putBoolean(ARG_IS_LOADING, mIsLoading);
         super.onSaveInstanceState(outState);
@@ -211,12 +218,6 @@ public class BrowseFragment extends Fragment
             getLoaderManager().restartLoader(
                     mParentStream == null ? -1 : (int) mParentStream.getId(), null, this);
         }
-    }
-
-    @Override
-    public void onDestroyView() {
-        ButterKnife.unbind(this);
-        super.onDestroyView();
     }
 
     @Override

@@ -92,7 +92,7 @@ public class BrowseActivity extends AppCompatActivity {
         public void onConnected(Bundle connectionHint) {
             if (mWaitingForReconnect) {
                 mWaitingForReconnect = false;
-                // TODO reconnec channels
+                // TODO reconnect channels
             } else if (mSessionId != null && mRouteInfo != null) {
                 joinSession();
             } else {
@@ -508,7 +508,7 @@ public class BrowseActivity extends AppCompatActivity {
             mToolbar.setNavigationOnClickListener(null);
         } else {
             mToolbar.setSubtitle(stream.getTitle());
-            mToolbar.setNavigationIcon(R.drawable.abc_ic_ab_back_mtrl_am_alpha);
+            // FIXME mToolbar.setNavigationIcon(R.drawable.abc_ic_ab_back_mtrl_am_alpha);
             mToolbar.setNavigationOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(final View view) {
