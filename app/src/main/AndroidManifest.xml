@@ -40,6 +40,16 @@
                     android:pathPrefix="/de.ub0r.android.basscast:stream"
                     android:scheme="vnd.android.nfc" />
             </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data
+                    android:pathPattern="*.pls"
+                    android:scheme="http" />
+            </intent-filter>
         </activity>
 
         <activity

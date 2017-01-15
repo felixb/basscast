@@ -29,7 +29,7 @@ public class StreamFetcherTest extends AndroidTestCase {
     }
 
 
-    public void testFetch() throws IOException {
+    public void testFetchHtml() throws IOException {
         final MockWebServer server = new MockWebServer();
 
         server.enqueue(new MockResponse()
@@ -78,6 +78,53 @@ public class StreamFetcherTest extends AndroidTestCase {
         assertEquals("even more music", stream.getTitle());
         assertEquals("http://cdn.example.org/some-external-stream.mp3", stream.getUrl());
         assertEquals("audio/mp3", stream.getMimeType());
+
+        server.shutdown();
+    }
+
+    public void testFetchPls() throws IOException {
+        final MockWebServer server = new MockWebServer();
+
+        server.enqueue(new MockResponse()
+                .setBody("[playlist]\n" +
+                        "File1=http://some-fancy-stream.example.org/stream\n" +
+                        "Title1=Fancy Radio Station\n" +
+                        "Length1=-1\n" +
+                        "File2=http://some-fancy-stream.example.org/alt-stream\n" +
+                        "Title2=Fancy Other Radio Station\n" +
+                        "Length2=-1\n" +
+                        "NumberOfEntries=2\n" +
+                        "Version=2\n")
+                .setHeader("Content-Type", "audio/x-scpls"));
+
+        server.start();
+
+        final HttpUrl baseUrl = server.url("/listen.pls");
+        final Stream parentStream = new Stream(baseUrl.toString(), "some stream",
+                new MimeType("audio/x-scpls"));
+        parentStream.setId(9002);
+        parentStream.setBaseId(9000);
+        parentStream.setParentId(9001);
+
+        final StreamFetcher fetcher = new StreamFetcher(getContext());
+        final List<Stream> streams = fetcher.fetch(parentStream);
+
+        assertNotNull(streams);
+        assertEquals(2, streams.size());
+
+        Stream stream = streams.get(0);
+        assertEquals(9000, stream.getBaseId());
+        assertEquals(9002, stream.getParentId());
+        assertEquals("Fancy Radio Station", stream.getTitle());
+        assertEquals("http://some-fancy-stream.example.org/stream", stream.getUrl());
+        assertEquals("audio/*", stream.getMimeType());
+
+        stream = streams.get(1);
+        assertEquals(9000, stream.getBaseId());
+        assertEquals(9002, stream.getParentId());
+        assertEquals("Fancy Other Radio Station", stream.getTitle());
+        assertEquals("http://some-fancy-stream.example.org/alt-stream", stream.getUrl());
+        assertEquals("audio/*", stream.getMimeType());
 
         server.shutdown();
     }

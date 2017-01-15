@@ -1,9 +1,9 @@
 package de.ub0r.android.basscast.model;
 
-import com.google.android.gms.cast.MediaMetadata;
-
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+
+import com.google.android.gms.cast.MediaMetadata;
 
 import java.util.HashMap;
 
@@ -23,6 +23,7 @@ public class MimeType {
         EXTENSIONS.put(".mp3", new MimeType("audio/mp3"));
         EXTENSIONS.put(".ogg", new MimeType("audio/ogg"));
         EXTENSIONS.put(".wma", new MimeType("audio/wma"));
+        EXTENSIONS.put(".pls", new MimeType("audio/x-scpls"));
         EXTENSIONS.put(".avi", new MimeType("video/avi"));
         EXTENSIONS.put(".mp4", new MimeType("video/mp4"));
         EXTENSIONS.put(".mkv", new MimeType("video/mkv"));
@@ -55,7 +56,11 @@ public class MimeType {
 
     private int convertMimeTypeToType(@NonNull String mimeType) {
         if (mimeType.startsWith("audio/")) {
-            return MediaMetadata.MEDIA_TYPE_MUSIC_TRACK;
+            if ("audio/x-scpls".equals(mimeType)) {
+                return MediaMetadata.MEDIA_TYPE_USER;
+            } else {
+                return MediaMetadata.MEDIA_TYPE_MUSIC_TRACK;
+            }
         } else if (mimeType.startsWith("video/")) {
             return MediaMetadata.MEDIA_TYPE_MOVIE;
         } else if (mimeType.startsWith("text/")) {

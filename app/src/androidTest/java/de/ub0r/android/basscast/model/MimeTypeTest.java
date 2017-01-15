@@ -30,6 +30,7 @@ public class MimeTypeTest extends AndroidTestCase {
         assertFalse(new MimeType("text/html").isPlayable());
         assertTrue(new MimeType("audio/foo").isPlayable());
         assertTrue(new MimeType("video/bar").isPlayable());
+        assertFalse(new MimeType("audio/x-scpls").isPlayable());
     }
 
     public void testIsBrowsable() {
@@ -37,6 +38,7 @@ public class MimeTypeTest extends AndroidTestCase {
         assertFalse(new MimeType("audio/foo").isBrowsable());
         assertFalse(new MimeType("video/bar").isBrowsable());
         assertFalse(new MimeType("foo/bar").isBrowsable());
+        assertTrue(new MimeType("audio/x-scpls").isBrowsable());
     }
 
     public void testIsSupported() {
@@ -44,12 +46,14 @@ public class MimeTypeTest extends AndroidTestCase {
         assertTrue(new MimeType("audio/foo").isSupported());
         assertTrue(new MimeType("video/bar").isSupported());
         assertFalse(new MimeType("foo/bar").isSupported());
+        assertTrue(new MimeType("audio/x-scpls").isSupported());
     }
 
     public void testGetType() {
         assertEquals(MediaMetadata.MEDIA_TYPE_USER, new MimeType("text/html").getType());
         assertEquals(MediaMetadata.MEDIA_TYPE_MOVIE, new MimeType("video/foo").getType());
         assertEquals(MediaMetadata.MEDIA_TYPE_MUSIC_TRACK, new MimeType("audio/bar").getType());
+        assertEquals(MediaMetadata.MEDIA_TYPE_USER, new MimeType("audio/x-scpls").getType());
         assertEquals(-1, new MimeType("foo/bar").getType());
     }
 }

@@ -58,6 +58,8 @@ public class EditStreamActivity extends AppCompatActivity implements
         final Uri data = getIntent().getData();
         if (savedInstanceState != null) {
             mStream = new Stream(savedInstanceState.getBundle(ARG_STREAM));
+        } else if (Intent.ACTION_VIEW.equals(action) && data != null) {
+            mUrlView.setText(data.toString());
         } else if (Intent.ACTION_EDIT.equals(action) && data != null) {
             mStream = fetchStream(data);
         } else if (Intent.ACTION_INSERT.equals(action)) {
