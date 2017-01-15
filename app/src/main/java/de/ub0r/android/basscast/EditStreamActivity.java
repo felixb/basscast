@@ -2,6 +2,7 @@ package de.ub0r.android.basscast;
 
 import android.app.AlertDialog;
 import android.content.ContentValues;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.database.Cursor;
 import android.net.Uri;
@@ -30,7 +31,7 @@ import de.ub0r.android.basscast.model.Stream;
 import de.ub0r.android.basscast.model.StreamsTable;
 
 public class EditStreamActivity extends AppCompatActivity implements
-        NfcAdapter.CreateNdefMessageCallback {
+        NfcAdapter.CreateNdefMessageCallback, FetcherCallbacks {
 
     private static final String TAG = "EditStreamActivity";
 
@@ -38,13 +39,12 @@ public class EditStreamActivity extends AppCompatActivity implements
 
     @Bind(R.id.title)
     EditText mTitleView;
-
     @Bind(R.id.url)
     EditText mUrlView;
 
     private Stream mStream;
-
     private StreamFetcher mFetcher;
+    private AlertDialog mFetchingDialog;
 
     @Override
     protected void onCreate(final Bundle savedInstanceState) {
@@ -197,39 +197,7 @@ public class EditStreamActivity extends AppCompatActivity implements
             Log.d(TAG, "Need to fetch mimeType with AsyncTask");
 
             // fetch unguessable
-            new FetchMimeTypeTask(mFetcher, mStream, new FetcherCallbacks() {
-
-                private AlertDialog mDialog;
-
-                @Override
-                public void onFetchStarted() {
-                    Log.d(TAG, "Start fetching mimeType");
-                    mDialog = new AlertDialog.Builder(EditStreamActivity.this)
-                            .setMessage(R.string.loading)
-                            .setCancelable(true)
-                            .create();
-                    mDialog.show();
-                }
-
-                @Override
-                public void onFetchFinished() {
-                    Log.i(TAG, "Fetched mimeType: " + mStream.getMimeType());
-                    saveAndFinish();
-                    try {
-                        mDialog.dismiss();
-                    } catch (IllegalArgumentException e) {
-                        Log.e(TAG, "Failed closing dialog when finishing activity", e);
-                    }
-                }
-
-                @Override
-                public void onFetchFailed() {
-                    Log.e(TAG, "Failed fetching mimeType");
-                    mDialog.dismiss();
-                    Toast.makeText(EditStreamActivity.this,
-                            R.string.error_fetching_mime_type, Toast.LENGTH_LONG).show();
-                }
-            }).execute((Void) null);
+            new FetchMimeTypeTask(mFetcher, mStream, this).execute((Void) null);
             throw new IllegalArgumentException("Fetching mime type in AsyncTask");
         }
     }
@@ -272,5 +240,53 @@ public class EditStreamActivity extends AppCompatActivity implements
             }
         }
         throw new IllegalArgumentException("Invalid NDEF message");
+    }
+
+    @Override
+    public void onFetchStarted() {
+        Log.d(TAG, "Start fetching mimeType");
+        mFetchingDialog = new AlertDialog.Builder(this)
+                .setMessage(R.string.loading)
+                .setCancelable(true)
+                .create();
+        mFetchingDialog.show();
+    }
+
+    @Override
+    public void onFetchFinished() {
+        Log.i(TAG, "Fetched mimeType: " + mStream.getMimeType());
+        saveAndFinish();
+        try {
+            mFetchingDialog.dismiss();
+        } catch (IllegalArgumentException e) {
+            Log.e(TAG, "Failed closing dialog when finishing activity", e);
+        }
+    }
+
+    @Override
+    public void onFetchFailed() {
+        Log.e(TAG, "Failed fetching mimeType");
+        mFetchingDialog.dismiss();
+        Toast.makeText(this, R.string.error_fetching_mime_type, Toast.LENGTH_LONG).show();
+
+        // let's ask the user
+        new AlertDialog.Builder(this)
+                .setMessage(R.string.audio_or_video)
+                .setCancelable(true)
+                .setNeutralButton(R.string.video, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(final DialogInterface dialog, final int which) {
+                        mStream.setMimeType(new MimeType("video/*"));
+                        saveAndFinish();
+                    }
+                })
+                .setPositiveButton(R.string.audio, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(final DialogInterface dialog, final int which) {
+                        mStream.setMimeType(new MimeType("audio/*"));
+                        saveAndFinish();
+                    }
+                })
+                .show();
     }
 }

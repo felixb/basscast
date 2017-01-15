@@ -19,6 +19,9 @@
     <string name="empty_streams_title">Empty stream list</string>
     <string name="empty_streams">Add streams by tapping on the + button</string>
     <string name="loading">Loading…</string>
+    <string name="audio_or_video">Is this stream an audio or video stream?</string>
+    <string name="audio">Audio</string>
+    <string name="video">Video</string>
     <string name="about_app_version">About %1$s v%2$s</string>
     <string name="about_license">License: GPL v3</string>
     <string name="about_website">Website:</string>
