@@ -113,8 +113,7 @@ public class StreamFetcher {
         final Response response = mHttpClient.newCall(new Request.Builder()
                 .url(parent.getUrl())
                 .build()).execute();
-        String mimeType = response.header("Content-Type");
-        Log.d(TAG, "fetch(): Response Content-Type: " + mimeType);
+        String mimeType = parent.getMimeType();
         if (mimeType != null) {
             if (mimeType.startsWith("text/html")) {
                 parseHtml(parent, list, response);
