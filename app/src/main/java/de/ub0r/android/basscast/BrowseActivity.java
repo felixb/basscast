@@ -8,20 +8,18 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.annotation.StyleRes;
 import android.support.annotation.VisibleForTesting;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.FragmentTransaction;
-import android.support.v4.view.MenuItemCompat;
 import android.support.v7.app.AppCompatActivity;
-import android.support.v7.app.MediaRouteActionProvider;
-import android.support.v7.media.MediaRouteSelector;
 import android.support.v7.media.MediaRouter;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
-import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -32,19 +30,20 @@ import android.widget.Toast;
 import com.google.android.gms.ads.AdListener;
 import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.InterstitialAd;
-import com.google.android.gms.cast.Cast;
-import com.google.android.gms.cast.CastDevice;
-import com.google.android.gms.cast.CastMediaControlIntent;
 import com.google.android.gms.cast.MediaInfo;
+import com.google.android.gms.cast.MediaLoadOptions;
 import com.google.android.gms.cast.MediaMetadata;
 import com.google.android.gms.cast.MediaStatus;
-import com.google.android.gms.cast.RemoteMediaPlayer;
-import com.google.android.gms.common.ConnectionResult;
-import com.google.android.gms.common.api.GoogleApiClient;
-import com.google.android.gms.common.api.ResultCallback;
-import com.google.android.gms.common.api.Status;
-
-import java.io.IOException;
+import com.google.android.gms.cast.framework.CastButtonFactory;
+import com.google.android.gms.cast.framework.CastContext;
+import com.google.android.gms.cast.framework.CastSession;
+import com.google.android.gms.cast.framework.Session;
+import com.google.android.gms.cast.framework.SessionManager;
+import com.google.android.gms.cast.framework.SessionManagerListener;
+import com.google.android.gms.cast.framework.media.RemoteMediaClient;
+import com.google.android.gms.common.api.PendingResult;
+import com.google.android.gms.common.api.Result;
+import com.google.android.gms.common.api.ResultTransform;
 
 import butterknife.BindDimen;
 import butterknife.BindView;
@@ -63,147 +62,9 @@ public class BrowseActivity extends AppCompatActivity {
         void onStateChange();
     }
 
-    private class MediaRouterCallback extends MediaRouter.Callback {
+    private static class InsertStreamsTask extends StreamTask {
 
-        @Override
-        public void onRouteSelected(final MediaRouter router, final MediaRouter.RouteInfo info) {
-            mRouteInfo = info;
-            mSelectedDevice = CastDevice.getFromBundle(info.getExtras());
-            final SharedPreferences prefs = getSharedPreferences(PREFS_FILE_CHROMECAST,
-                    MODE_PRIVATE);
-            prefs.edit().putString(PREFS_ROUTE_ID, info.getId()).apply();
-            launchReceiver();
-        }
-
-        @Override
-        public void onRouteUnselected(final MediaRouter router, final MediaRouter.RouteInfo info) {
-            teardown();
-        }
-
-        @Override
-        public void onRouteAdded(final MediaRouter router, final MediaRouter.RouteInfo route) {
-            Log.d(TAG, "Route added: " + route.getName());
-            if (mRouteId != null && mRouteInfo == null && mRouteId.equals(route.getId())) {
-                restoreRoute();
-            }
-        }
-    }
-
-    private class ConnectionCallbacks implements
-            GoogleApiClient.ConnectionCallbacks {
-
-        @Override
-        public void onConnected(Bundle connectionHint) {
-            if (mWaitingForReconnect) {
-                mWaitingForReconnect = false;
-                // TODO reconnect channels
-            } else if (mSessionId != null && mRouteInfo != null) {
-                joinSession();
-            } else {
-                newSession();
-            }
-
-            updateControlViews(true);
-
-        }
-
-        @Override
-        public void onConnectionSuspended(int cause) {
-            mWaitingForReconnect = true;
-        }
-
-        private void joinSession() {
-            try {
-                Cast.CastApi
-                        .joinApplication(mApiClient,
-                                CastMediaControlIntent.DEFAULT_MEDIA_RECEIVER_APPLICATION_ID,
-                                mSessionId)
-                        .setResultCallback(
-                                new ResultCallback<Cast.ApplicationConnectionResult>() {
-                                    @Override
-                                    public void onResult(
-                                            @NonNull final Cast.ApplicationConnectionResult result) {
-                                        Status status = result.getStatus();
-                                        if (status.isSuccess()) {
-                                            Log.i(TAG, "Joined session: " + mRouteInfo.getName());
-                                            setApplicationStarted(true);
-                                            mMediaRouter.selectRoute(mRouteInfo);
-                                            connectRemoteMediaPlayer();
-                                        } else {
-                                            teardown();
-                                        }
-                                    }
-                                });
-            } catch (Exception e) {
-                Log.e(TAG, "Failed to join application", e);
-            }
-        }
-
-        private void newSession() {
-            try {
-                Cast.CastApi
-                        .launchApplication(mApiClient,
-                                CastMediaControlIntent.DEFAULT_MEDIA_RECEIVER_APPLICATION_ID)
-                        .setResultCallback(
-                                new ResultCallback<Cast.ApplicationConnectionResult>() {
-                                    @Override
-                                    public void onResult(
-                                            @NonNull final Cast.ApplicationConnectionResult result) {
-                                        Status status = result.getStatus();
-                                        if (status.isSuccess()) {
-                                            setApplicationStarted(true);
-                                            mSessionId = result.getSessionId();
-                                            getSharedPreferences(PREFS_FILE_CHROMECAST,
-                                                    MODE_PRIVATE).edit()
-                                                    .putString(PREFS_SESSION_ID, mSessionId)
-                                                    .apply();
-                                            Log.i(TAG, "Application launched: " + result
-                                                    .getApplicationMetadata().getName());
-                                            connectRemoteMediaPlayer();
-                                        } else {
-                                            teardown();
-                                        }
-                                    }
-                                });
-            } catch (Exception e) {
-                Log.e(TAG, "Failed to launch application", e);
-            }
-        }
-    }
-
-    private void connectRemoteMediaPlayer() {
-        try {
-            Cast.CastApi.setMessageReceivedCallbacks(mApiClient, mRemoteMediaPlayer.getNamespace(),
-                    mRemoteMediaPlayer);
-        } catch (IOException e) {
-            Log.e(TAG, "Exception while creating media channel", e);
-        }
-        mRemoteMediaPlayer
-                .requestStatus(mApiClient)
-                .setResultCallback(
-                        new ResultCallback<RemoteMediaPlayer.MediaChannelResult>() {
-                            @Override
-                            public void onResult(
-                                    @NonNull final RemoteMediaPlayer.MediaChannelResult result) {
-                                if (!result.getStatus().isSuccess()) {
-                                    Log.e(TAG, "Failed to request status.");
-                                }
-                            }
-                        });
-    }
-
-    private class ConnectionFailedListener implements
-            GoogleApiClient.OnConnectionFailedListener {
-
-        @Override
-        public void onConnectionFailed(@NonNull final ConnectionResult result) {
-            teardown();
-        }
-    }
-
-    private static class InserStreamsTask extends StreamTask {
-
-        public InserStreamsTask(Activity activity) {
+        public InsertStreamsTask(Activity activity) {
             super(activity, false);
         }
 
@@ -250,7 +111,70 @@ public class BrowseActivity extends AppCompatActivity {
 
     private String mSessionId;
 
-    private GoogleApiClient mApiClient;
+    private CastContext mCastContext;
+    private CastSession mCastSession;
+    private SessionManager mSessionManager;
+    private final SessionManagerListener mSessionManagerListener = new SessionManagerListener() {
+        @Override
+        public void onSessionStarting(Session session) {
+
+        }
+
+        @Override
+        public void onSessionStarted(Session session, String sessionId) {
+            initCastSession();
+            invalidateOptionsMenu();
+        }
+
+        @Override
+        public void onSessionStartFailed(Session session, int i) {
+
+        }
+
+        @Override
+        public void onSessionEnding(Session session) {
+
+        }
+
+        @Override
+        public void onSessionResumed(Session session, boolean wasSuspended) {
+            initCastSession();
+            invalidateOptionsMenu();
+        }
+
+        @Override
+        public void onSessionResumeFailed(Session session, int i) {
+
+        }
+
+        @Override
+        public void onSessionSuspended(Session session, int i) {
+
+        }
+
+        @Override
+        public void onSessionEnded(Session session, int error) {
+        }
+
+        @Override
+        public void onSessionResuming(Session session, String s) {
+
+        }
+    };
+    private final Handler mUpdateControlsHandler = new Handler();
+    private final ResultTransform<RemoteMediaClient.MediaChannelResult, Result> mResultCallback = new ResultTransform<RemoteMediaClient.MediaChannelResult, Result>() {
+        @Nullable
+        @Override
+        public PendingResult<Result> onSuccess(@NonNull RemoteMediaClient.MediaChannelResult mediaChannelResult) {
+            mUpdateControlsHandler.post(new Runnable() {
+                @Override
+                public void run() {
+                    updateControlViews(true);
+                }
+            });
+            return null;
+        }
+    };
 
     private OnStateChangeListener mOnStateChangeListener;
 
@@ -260,43 +184,6 @@ public class BrowseActivity extends AppCompatActivity {
 
     @BindView(R.id.toolbar)
     Toolbar mToolbar;
-
-    private Cast.Listener mCastClientListener = new Cast.Listener() {
-        @Override
-        public void onApplicationStatusChanged() {
-            if (mApiClient != null) {
-                Log.d(TAG, "onApplicationStatusChanged: "
-                        + Cast.CastApi.getApplicationStatus(mApiClient));
-            }
-        }
-
-        @Override
-        public void onVolumeChanged() {
-            if (mApiClient != null) {
-                Log.d(TAG, "onVolumeChanged: " + Cast.CastApi.getVolume(mApiClient));
-            }
-        }
-
-        @Override
-        public void onApplicationDisconnected(int errorCode) {
-            teardown();
-        }
-    };
-
-    private GoogleApiClient.ConnectionCallbacks mConnectionCallbacks = new ConnectionCallbacks();
-
-    private GoogleApiClient.OnConnectionFailedListener mConnectionFailedListener
-            = new ConnectionFailedListener();
-
-    private MediaRouter mMediaRouter;
-
-    private MediaRouteSelector mMediaRouteSelector;
-
-    private MediaRouterCallback mMediaRouterCallback = new MediaRouterCallback();
-
-    private RemoteMediaPlayer mRemoteMediaPlayer;
-
-    private CastDevice mSelectedDevice;
 
     @BindView(R.id.fab)
     FloatingActionButton mFloatingActionButtonView;
@@ -319,24 +206,13 @@ public class BrowseActivity extends AppCompatActivity {
     private Unbinder mUnbinder;
 
     @Override
-    protected void onStart() {
-        super.onStart();
-        mMediaRouter.addCallback(mMediaRouteSelector, mMediaRouterCallback,
-                MediaRouter.CALLBACK_FLAG_REQUEST_DISCOVERY);
-    }
-
-    @Override
-    protected void onStop() {
-        mMediaRouter.removeCallback(mMediaRouterCallback);
-        super.onStop();
-    }
-
-    @Override
     protected void onCreate(final Bundle savedInstanceState) {
+        mSessionManager = CastContext.getSharedInstance(this).getSessionManager();
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_browse);
         mUnbinder = ButterKnife.bind(this);
         setSupportActionBar(mToolbar);
+        mCastContext = CastContext.getSharedInstance(this);
 
         if (savedInstanceState == null) {
             insertDefaultStreams();
@@ -360,45 +236,6 @@ public class BrowseActivity extends AppCompatActivity {
             }
         });
 
-        mMediaRouter = MediaRouter.getInstance(getApplicationContext());
-        mMediaRouteSelector = new MediaRouteSelector.Builder()
-                .addControlCategory(CastMediaControlIntent.categoryForCast(
-                        CastMediaControlIntent.DEFAULT_MEDIA_RECEIVER_APPLICATION_ID))
-                .build();
-
-        mRemoteMediaPlayer = new RemoteMediaPlayer();
-        mRemoteMediaPlayer.setOnStatusUpdatedListener(
-                new RemoteMediaPlayer.OnStatusUpdatedListener() {
-                    @Override
-                    public void onStatusUpdated() {
-                        MediaStatus mediaStatus = mRemoteMediaPlayer.getMediaStatus();
-                        if (mediaStatus == null) {
-                            Log.w(TAG, "mediaStatus == null");
-                        } else {
-                            boolean isPlaying = mediaStatus.getPlayerState() ==
-                                    MediaStatus.PLAYER_STATE_PLAYING;
-                            Log.d(TAG, "RemoteMediaPlayer is playing: " + isPlaying);
-                        }
-                    }
-                });
-
-        mRemoteMediaPlayer.setOnMetadataUpdatedListener(
-                new RemoteMediaPlayer.OnMetadataUpdatedListener() {
-                    @Override
-                    public void onMetadataUpdated() {
-                        MediaInfo mediaInfo = mRemoteMediaPlayer.getMediaInfo();
-                        if (mediaInfo == null) {
-                            Log.d(TAG, "RemoteMediaPlayer metadata updated: null");
-                        } else {
-                            Log.d(TAG, "RemoteMediaPlayer metadata updated: " + mediaInfo);
-                        }
-                        updateControlViews(true);
-                    }
-                });
-
-        restoreRoute();
-        updateControlViews(false);
-
         mInterstitialAd = new InterstitialAd(this);
         mInterstitialAd.setAdUnitId("ca-app-pub-1948477123608376/3415873285");
         mInterstitialAd.setAdListener(new AdListener() {
@@ -411,6 +248,20 @@ public class BrowseActivity extends AppCompatActivity {
     }
 
     @Override
+    protected void onResume() {
+        initCastSession();
+        updateControlViews(false);
+        super.onResume();
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        mSessionManager.removeSessionManagerListener(mSessionManagerListener);
+        mCastSession = null;
+    }
+
+    @Override
     protected void onDestroy() {
         mUnbinder.unbind();
         super.onDestroy();
@@ -420,10 +271,7 @@ public class BrowseActivity extends AppCompatActivity {
     public boolean onCreateOptionsMenu(final Menu menu) {
         getMenuInflater().inflate(R.menu.menu_browse, menu);
 
-        MenuItem mediaRouteMenuItem = menu.findItem(R.id.action_cast);
-        MediaRouteActionProvider mediaRouteActionProvider =
-                (MediaRouteActionProvider) MenuItemCompat.getActionProvider(mediaRouteMenuItem);
-        mediaRouteActionProvider.setRouteSelector(mMediaRouteSelector);
+        CastButtonFactory.setUpMediaRouteButton(getApplicationContext(), menu, R.id.action_cast);
         return true;
     }
 
@@ -438,96 +286,27 @@ public class BrowseActivity extends AppCompatActivity {
         }
     }
 
-    @Override
-    public boolean dispatchKeyEvent(final KeyEvent event) {
-        final int action = event.getAction();
-        final int keyCode = event.getKeyCode();
-        //AudioManager mAudioManager = (AudioManager) getSystemService(AUDIO_SERVICE);
-        //mAudioManager.adjustSuggestedStreamVolume(AudioManager.ADJUST_SAME,
-        //        AudioManager.STREAM_MUSIC, AudioManager.FLAG_SHOW_UI);
-        switch (keyCode) {
-            case KeyEvent.KEYCODE_VOLUME_UP:
-                if (action == KeyEvent.ACTION_DOWN) {
-                    if (mApiClient != null && mRemoteMediaPlayer != null) {
-                        double currentVolume = Cast.CastApi.getVolume(mApiClient);
-                        if (currentVolume < 1.0) {
-                            try {
-                                Cast.CastApi.setVolume(mApiClient,
-                                        Math.min(currentVolume + VOLUME_INCREMENT, 1.0));
-                            } catch (Exception e) {
-                                Log.e(TAG, "unable to set volume", e);
-                            }
-                        }
-                    } else {
-                        return true;
-                    }
-                }
-                return true;
-            case KeyEvent.KEYCODE_VOLUME_DOWN:
-                if (action == KeyEvent.ACTION_DOWN) {
-                    if (mApiClient != null && mRemoteMediaPlayer != null) {
-                        double currentVolume = Cast.CastApi.getVolume(mApiClient);
-                        if (currentVolume > 0.0) {
-                            try {
-                                Cast.CastApi.setVolume(mApiClient,
-                                        Math.max(currentVolume - VOLUME_INCREMENT, 0.0));
-                            } catch (Exception e) {
-                                Log.e(TAG, "unable to set volume", e);
-                            }
-                        }
-                    } else {
-                        return true;
-                    }
-                }
-                return true;
-            default:
-                return super.dispatchKeyEvent(event);
-        }
-    }
-
     @OnClick(R.id.control_action_stop)
     void onStopClick() {
-        mRemoteMediaPlayer.stop(mApiClient).setResultCallback(
-                new ResultCallback<RemoteMediaPlayer.MediaChannelResult>() {
-                    @Override
-                    public void onResult(
-                            @NonNull final RemoteMediaPlayer.MediaChannelResult mediaChannelResult) {
-                        updateControlViews(true);
-                    }
-                });
+        if (isConnected()) {
+            mCastSession.getRemoteMediaClient().stop().then(mResultCallback);
+        }
     }
 
     @OnClick(R.id.control_action_play)
     void onPlayClick() {
-        MediaStatus status = mRemoteMediaPlayer.getMediaStatus();
-
-        if (MediaStatus.PLAYER_STATE_PAUSED == status.getPlayerState()) {
-            mRemoteMediaPlayer.play(mApiClient).setResultCallback(
-                    new ResultCallback<RemoteMediaPlayer.MediaChannelResult>() {
-                        @Override
-                        public void onResult(
-                                @NonNull final RemoteMediaPlayer.MediaChannelResult mediaChannelResult) {
-                            updateControlViews(true);
-                        }
-                    });
-        } else { // MediaStatus.PLAYER_STATE_PLAYING || MediaStatus.PLAYER_STATE_BUFFERING
-            mRemoteMediaPlayer.pause(mApiClient).setResultCallback(
-                    new ResultCallback<RemoteMediaPlayer.MediaChannelResult>() {
-                        @Override
-                        public void onResult(
-                                @NonNull final RemoteMediaPlayer.MediaChannelResult mediaChannelResult) {
-                            updateControlViews(true);
-                        }
-                    });
+        if (isConnected()) {
+            final RemoteMediaClient client = mCastSession.getRemoteMediaClient();
+            if (client.isPlaying()) {
+                client.pause().then(mResultCallback);
+            } else {
+                client.play().then(mResultCallback);
+            }
         }
     }
 
     void setOnStateChangeListener(final OnStateChangeListener listener) {
         mOnStateChangeListener = listener;
-    }
-
-    boolean isApplicationStarted() {
-        return mApplicationStarted;
     }
 
     @VisibleForTesting
@@ -558,9 +337,14 @@ public class BrowseActivity extends AppCompatActivity {
         }
     }
 
+    private void initCastSession() {
+        mCastSession = mSessionManager.getCurrentCastSession();
+        mSessionManager.addSessionManagerListener(mSessionManagerListener);
+    }
+
     public void onStreamClick(final Stream stream) {
         if (stream.isPlayable()) {
-            if (mApplicationStarted) {
+            if (isConnected()) {
                 castStream(stream);
                 if (mInterstitialAd.isLoaded()) {
                     mInterstitialAd.show();
@@ -573,6 +357,10 @@ public class BrowseActivity extends AppCompatActivity {
         }
     }
 
+    private boolean isConnected() {
+        return mCastSession != null && mCastSession.getCastDevice() != null;
+    }
+
     void playStreamLocally(final Stream stream) {
         final int resId = R.string.playing_stream_on_this_device;
         Toast.makeText(this, getString(resId, stream.getTitle()), Toast.LENGTH_LONG).show();
@@ -581,29 +369,11 @@ public class BrowseActivity extends AppCompatActivity {
 
     void castStream(final Stream stream) {
         Toast.makeText(this,
-                getString(R.string.casting_stream, stream.getTitle(), mSelectedDevice.getFriendlyName()),
+                getString(R.string.casting_stream, stream.getTitle(), mCastSession.getCastDevice().getFriendlyName()),
                 Toast.LENGTH_LONG).show();
         MediaInfo mediaInfo = stream.getMediaMetadata();
-
-        try {
-            mRemoteMediaPlayer
-                    .load(mApiClient, mediaInfo, true)
-                    .setResultCallback(new ResultCallback<RemoteMediaPlayer.MediaChannelResult>() {
-                        @Override
-                        public void onResult(
-                                @NonNull final RemoteMediaPlayer.MediaChannelResult result) {
-                            if (result.getStatus().isSuccess()) {
-                                Log.d(TAG, "Media loaded successfully");
-                            }
-                        }
-                    });
-        } catch (IllegalStateException e) {
-            Log.e(TAG, "Problem occurred with media during loading", e);
-            Toast.makeText(this, R.string.error_loading_media, Toast.LENGTH_LONG).show();
-        } catch (Exception e) {
-            Log.e(TAG, "Problem opening media during loading", e);
-            Toast.makeText(this, R.string.error_opening_media, Toast.LENGTH_LONG).show();
-        }
+        RemoteMediaClient remoteMediaClient = mCastSession.getRemoteMediaClient();
+        remoteMediaClient.load(mediaInfo, new MediaLoadOptions.Builder().build()).then(mResultCallback);
     }
 
     private void showStream(final Stream parentStream) {
@@ -623,10 +393,14 @@ public class BrowseActivity extends AppCompatActivity {
     }
 
     private void updateControlViews(final boolean showAnimations) {
-        MediaStatus status = mRemoteMediaPlayer.getMediaStatus();
-        MediaInfo info = mRemoteMediaPlayer.getMediaInfo();
-        boolean showControls = isApplicationStarted()
-                && status != null && info != null && info.getMetadata() != null
+        if (!isConnected()) {
+            setControlsPosition(mControlsHeight, showAnimations);
+            return;
+        }
+
+        MediaStatus status = mCastSession.getRemoteMediaClient().getMediaStatus();
+        MediaInfo info = mCastSession.getRemoteMediaClient().getMediaInfo();
+        boolean showControls = status != null && info != null && info.getMetadata() != null
                 && (MediaStatus.PLAYER_STATE_PLAYING == status.getPlayerState()
                 || MediaStatus.PLAYER_STATE_BUFFERING == status.getPlayerState()
                 || MediaStatus.PLAYER_STATE_PAUSED == status.getPlayerState());
@@ -679,64 +453,10 @@ public class BrowseActivity extends AppCompatActivity {
         }
     }
 
-    private void restoreRoute() {
-        if (mRouteId != null) {
-            Log.d(TAG, "Restore route");
-            for (MediaRouter.RouteInfo route : mMediaRouter.getRoutes()) {
-                if (mRouteId.equals(route.getId())) {
-                    Log.i(TAG, "Found existing route, restore session: " + route.getName());
-                    mRouteInfo = route;
-                    mSelectedDevice = CastDevice.getFromBundle(route.getExtras());
-                    launchReceiver();
-                    return;
-                }
-            }
-        }
-    }
-
-    private void launchReceiver() {
-        Cast.CastOptions apiOptions = new Cast.CastOptions
-                .Builder(mSelectedDevice, mCastClientListener)
-                .build();
-
-        mApiClient = new GoogleApiClient.Builder(this)
-                .addApi(Cast.API, apiOptions)
-                .addConnectionCallbacks(mConnectionCallbacks)
-                .addOnConnectionFailedListener(mConnectionFailedListener)
-                .build();
-
-        mApiClient.connect();
-    }
-
-    private void teardown() {
-        Log.d(TAG, "Tear down cast connection");
-        if (mApiClient != null) {
-            if (isApplicationStarted()) {
-                if (mApiClient.isConnected() || mApiClient.isConnecting()) {
-                    Cast.CastApi.stopApplication(mApiClient, mSessionId);
-                    mApiClient.disconnect();
-                }
-                setApplicationStarted(false);
-            }
-            mApiClient = null;
-        }
-        mRouteInfo = null;
-        mSelectedDevice = null;
-        mWaitingForReconnect = false;
-        mSessionId = null;
-
-        getSharedPreferences(PREFS_FILE_CHROMECAST, MODE_PRIVATE).edit()
-                .remove(PREFS_ROUTE_ID)
-                .remove(PREFS_SESSION_ID)
-                .apply();
-
-        updateControlViews(true);
-    }
-
     private void insertDefaultStreams() {
         final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
         if (!prefs.getBoolean(PREFS_DEFAULT_STREAMS_INSERTED, false)) {
-            new InserStreamsTask(this).execute(getDefaultStreams());
+            new InsertStreamsTask(this).execute(getDefaultStreams());
         }
     }
 
