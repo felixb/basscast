@@ -1,15 +1,17 @@
 package de.ub0r.android.basscast;
 
+import android.annotation.SuppressLint;
+import android.app.Activity;
 import android.app.AlertDialog;
-import android.content.ContentValues;
+import android.content.ContentUris;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.database.Cursor;
 import android.net.Uri;
 import android.nfc.NdefMessage;
 import android.nfc.NdefRecord;
 import android.nfc.NfcAdapter;
 import android.nfc.NfcEvent;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Parcelable;
 import android.support.annotation.NonNull;
@@ -21,36 +23,89 @@ import android.view.MenuItem;
 import android.widget.EditText;
 import android.widget.Toast;
 
-import butterknife.Bind;
+import butterknife.BindView;
 import butterknife.ButterKnife;
+import butterknife.Unbinder;
 import de.ub0r.android.basscast.fetcher.FetchMimeTypeTask;
 import de.ub0r.android.basscast.fetcher.FetcherCallbacks;
 import de.ub0r.android.basscast.fetcher.StreamFetcher;
+import de.ub0r.android.basscast.model.AppDatabase;
 import de.ub0r.android.basscast.model.MimeType;
 import de.ub0r.android.basscast.model.Stream;
-import de.ub0r.android.basscast.model.StreamsTable;
+import de.ub0r.android.basscast.model.StreamDao;
+import de.ub0r.android.basscast.tasks.DeleteStreamTask;
+import de.ub0r.android.basscast.tasks.StreamTask;
 
 public class EditStreamActivity extends AppCompatActivity implements
         NfcAdapter.CreateNdefMessageCallback, FetcherCallbacks {
+
+    static class FetchStreamTask extends AsyncTask<Uri, Void, Void> {
+        @SuppressLint("StaticFieldLeak")
+        private EditStreamActivity mActivity;
+        private final StreamDao mDao;
+
+        FetchStreamTask(final EditStreamActivity activity) {
+            mActivity = activity;
+            mDao = AppDatabase.Builder.getInstance(activity).streamDao();
+        }
+
+
+        @Override
+        protected Void doInBackground(Uri... uris) {
+            final long streamId = ContentUris.parseId(uris[0]);
+
+            final Stream stream = mDao.get(streamId);
+            if (stream != null) {
+                mActivity.mStream = stream;
+                return null;
+            }
+            throw new IllegalArgumentException("Unable to fetch Stream with id " + streamId);
+        }
+
+        @Override
+        protected void onPostExecute(Void aVoid) {
+            mActivity.restoreViewsFromStream();
+            mActivity = null;
+        }
+    }
+
+    static class SaveStreamTask extends StreamTask {
+        SaveStreamTask(Activity activity) {
+            super(activity, true);
+        }
+
+        @Override
+        protected Void doInBackground(Stream... streams) {
+            final Stream stream = streams[0];
+            if (stream.getId() <= 0) {
+                mDao.insert(stream);
+            } else {
+                mDao.update(stream);
+            }
+            return null;
+        }
+    }
 
     private static final String TAG = "EditStreamActivity";
 
     private static final String ARG_STREAM = "STREAM";
 
-    @Bind(R.id.title)
+    @BindView(R.id.title)
     EditText mTitleView;
-    @Bind(R.id.url)
+    @BindView(R.id.url)
     EditText mUrlView;
 
     private Stream mStream;
     private StreamFetcher mFetcher;
     private AlertDialog mFetchingDialog;
+    private Unbinder mUnbinder;
 
+    @SuppressLint("StaticFieldLeak")
     @Override
     protected void onCreate(final Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_edit_stream);
-        ButterKnife.bind(this);
+        mUnbinder = ButterKnife.bind(this);
 
         mFetcher = new StreamFetcher(this);
 
@@ -61,7 +116,7 @@ public class EditStreamActivity extends AppCompatActivity implements
         } else if (Intent.ACTION_VIEW.equals(action) && data != null) {
             mUrlView.setText(data.toString());
         } else if (Intent.ACTION_EDIT.equals(action) && data != null) {
-            mStream = fetchStream(data);
+            new FetchStreamTask(this).execute(data);
         } else if (Intent.ACTION_INSERT.equals(action)) {
             mStream = new Stream();
         } else if (NfcAdapter.ACTION_NDEF_DISCOVERED.equals(action)) {
@@ -84,6 +139,12 @@ public class EditStreamActivity extends AppCompatActivity implements
     }
 
     @Override
+    protected void onDestroy() {
+        mUnbinder.unbind();
+        super.onDestroy();
+    }
+
+    @Override
     public void onSaveInstanceState(final Bundle outState) {
         outState.putBundle(ARG_STREAM, mStream.toBundle());
         super.onSaveInstanceState(outState);
@@ -92,7 +153,7 @@ public class EditStreamActivity extends AppCompatActivity implements
     @Override
     public boolean onCreateOptionsMenu(final Menu menu) {
         getMenuInflater().inflate(R.menu.menu_edit_stream, menu);
-        if (mStream.getId() < 0) {
+        if (mStream != null && mStream.getId() <= 0) {
             menu.removeItem(R.id.action_delete);
         }
         return true;
@@ -105,8 +166,7 @@ public class EditStreamActivity extends AppCompatActivity implements
                 saveAndFinish();
                 return true;
             case R.id.action_delete:
-                StreamUtils.deleteStream(this, mStream);
-                finish();
+                new DeleteStreamTask(this, true).execute(mStream);
                 return true;
             default:
                 return super.onOptionsItemSelected(item);
@@ -126,18 +186,23 @@ public class EditStreamActivity extends AppCompatActivity implements
                 NdefRecord.createApplicationRecord(BuildConfig.APPLICATION_ID)});
     }
 
+    @SuppressLint("StaticFieldLeak")
     private void saveAndFinish() {
         try {
-            saveStream();
-            finish();
+            storeStreamFromViews();
         } catch (IllegalArgumentException e) {
-            Log.e(TAG, "Saving stream failed", e);
+            // wait for retry on callback :x
+            return;
         }
+
+        new SaveStreamTask(this).execute(mStream);
     }
 
     private void restoreViewsFromStream() {
-        mTitleView.setText(mStream.getTitle());
-        mUrlView.setText(mStream.getUrl());
+        if (mStream != null) {
+            mTitleView.setText(mStream.getTitle());
+            mUrlView.setText(mStream.getUrl());
+        }
     }
 
     private void storeStreamFromViews() {
@@ -202,27 +267,6 @@ public class EditStreamActivity extends AppCompatActivity implements
             new FetchMimeTypeTask(mFetcher, mStream, this).execute((Void) null);
             throw new IllegalArgumentException("Fetching mime type in AsyncTask");
         }
-    }
-
-    private void saveStream() {
-        storeStreamFromViews();
-        ContentValues contentValues = StreamsTable.getContentValues(mStream, false);
-        if (mStream.getId() < 0) {
-            getContentResolver().insert(StreamsTable.CONTENT_URI, contentValues);
-        } else {
-            getContentResolver().update(mStream.getUri(), contentValues, null, null);
-        }
-    }
-
-    private Stream fetchStream(final Uri uri) {
-        Cursor cursor = getContentResolver().query(uri, null, null, null, null);
-        if (cursor != null) {
-            if (cursor.moveToFirst()) {
-                return StreamsTable.getRow(cursor, true);
-            }
-            throw new IllegalArgumentException("Unknown Stream: " + uri);
-        }
-        throw new IllegalArgumentException("Unable to fetch Stream");
     }
 
     private void parseNdefMessage(final Intent intent) {

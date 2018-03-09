@@ -3,10 +3,12 @@ package de.ub0r.android.basscast;
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.annotation.SuppressLint;
+import android.app.Activity;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.annotation.StyleRes;
 import android.support.annotation.VisibleForTesting;
@@ -44,13 +46,15 @@ import com.google.android.gms.common.api.Status;
 
 import java.io.IOException;
 
-import butterknife.Bind;
 import butterknife.BindDimen;
+import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
+import butterknife.Unbinder;
 import de.ub0r.android.basscast.fetcher.FetchTask;
 import de.ub0r.android.basscast.fetcher.StreamFetcher;
 import de.ub0r.android.basscast.model.Stream;
+import de.ub0r.android.basscast.tasks.StreamTask;
 
 public class BrowseActivity extends AppCompatActivity {
 
@@ -197,7 +201,32 @@ public class BrowseActivity extends AppCompatActivity {
         }
     }
 
+    private static class InserStreamsTask extends StreamTask {
+
+        public InserStreamsTask(Activity activity) {
+            super(activity, false);
+        }
+
+        @Override
+        protected Void doInBackground(Stream... streams) {
+            Log.i(TAG, "inserting " + streams.length + " default streams");
+            mDao.insert(streams);
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(Void aVoid) {
+            final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(mActivity);
+            prefs.edit()
+                    .putBoolean(PREFS_DEFAULT_STREAMS_INSERTED, true)
+                    .apply();
+            super.onPostExecute(aVoid);
+        }
+    }
+
     private static final String TAG = "BrowserActivity";
+
+    private final static String PREFS_DEFAULT_STREAMS_INSERTED = "default_streams_inserted";
 
     private static final String PREFS_FILE_CHROMECAST = "chromecast";
 
@@ -229,7 +258,7 @@ public class BrowseActivity extends AppCompatActivity {
 
     private StreamFetcher mFetcher;
 
-    @Bind(R.id.toolbar)
+    @BindView(R.id.toolbar)
     Toolbar mToolbar;
 
     private Cast.Listener mCastClientListener = new Cast.Listener() {
@@ -269,23 +298,25 @@ public class BrowseActivity extends AppCompatActivity {
 
     private CastDevice mSelectedDevice;
 
-    @Bind(R.id.fab)
+    @BindView(R.id.fab)
     FloatingActionButton mFloatingActionButtonView;
 
-    @Bind(R.id.controls)
+    @BindView(R.id.controls)
     View mControlsLayout;
 
-    @Bind(R.id.control_title)
+    @BindView(R.id.control_title)
     TextView mTitleView;
 
-    @Bind(R.id.control_action_play)
+    @BindView(R.id.control_action_play)
     ImageButton mPlayView;
 
-    @Bind(R.id.control_action_stop)
+    @BindView(R.id.control_action_stop)
     ImageButton mStopView;
 
     @BindDimen(R.dimen.controls_height)
     int mControlsHeight;
+
+    private Unbinder mUnbinder;
 
     @Override
     protected void onStart() {
@@ -304,10 +335,11 @@ public class BrowseActivity extends AppCompatActivity {
     protected void onCreate(final Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_browse);
-        ButterKnife.bind(this);
+        mUnbinder = ButterKnife.bind(this);
         setSupportActionBar(mToolbar);
 
         if (savedInstanceState == null) {
+            insertDefaultStreams();
             getSupportFragmentManager().beginTransaction()
                     .replace(R.id.fragment_container, BrowseFragment.getInstance(null))
                     .setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN)
@@ -376,6 +408,12 @@ public class BrowseActivity extends AppCompatActivity {
             }
         });
         requestNewInterstitial();
+    }
+
+    @Override
+    protected void onDestroy() {
+        mUnbinder.unbind();
+        super.onDestroy();
     }
 
     @Override
@@ -693,5 +731,21 @@ public class BrowseActivity extends AppCompatActivity {
                 .apply();
 
         updateControlViews(true);
+    }
+
+    private void insertDefaultStreams() {
+        final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+        if (!prefs.getBoolean(PREFS_DEFAULT_STREAMS_INSERTED, false)) {
+            new InserStreamsTask(this).execute(getDefaultStreams());
+        }
+    }
+
+    private Stream[] getDefaultStreams() {
+        String[] uris = getResources().getStringArray(R.array.default_streams);
+        Stream[] streams = new Stream[uris.length];
+        for (int i = 0; i < uris.length; i++) {
+            streams[i] = new Stream(Uri.parse(uris[i]));
+        }
+        return streams;
     }
 }

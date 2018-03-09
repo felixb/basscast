@@ -16,10 +16,10 @@ import java.io.Reader;
 import java.util.ArrayList;
 import java.util.List;
 
-import de.ub0r.android.basscast.StreamUtils;
+import de.ub0r.android.basscast.model.AppDatabase;
 import de.ub0r.android.basscast.model.MimeType;
 import de.ub0r.android.basscast.model.Stream;
-import de.ub0r.android.basscast.model.StreamsTable;
+import de.ub0r.android.basscast.model.StreamDao;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
@@ -45,7 +45,7 @@ public class StreamFetcher {
         final ContentResolver cr = mContext.getContentResolver();
 
         // find streams with same parent missing in new stream list
-        List<Stream> existingStreams = queryStreamsByParent(cr, parent);
+        List<Stream> existingStreams = queryStreamsByParent(parent);
         List<Stream> deletedStreams = new ArrayList<>();
         for (Stream oldStream : existingStreams) {
             boolean found = false;
@@ -61,11 +61,11 @@ public class StreamFetcher {
             }
         }
 
+        final StreamDao dao = AppDatabase.Builder.getInstance(mContext).streamDao();
+
         // remove these streams
         existingStreams.removeAll(deletedStreams);
-        for (Stream oldStream : deletedStreams) {
-            StreamUtils.deleteStream(mContext, oldStream);
-        }
+        dao.delete(deletedStreams.toArray(new Stream[deletedStreams.size()]));
 
         // insert/update new streams
         for (Stream newStream : streams) {
@@ -73,15 +73,13 @@ public class StreamFetcher {
             for (Stream oldStream : existingStreams) {
                 if (oldStream.getUrl().equals(newStream.getUrl())) {
                     found = true;
-                    cr.update(oldStream.getUri(), StreamsTable.getContentValues(newStream, false),
-                            null, null);
+                    dao.update(newStream);
                     break;
                 }
             }
 
             if (!found) {
-                cr.insert(StreamsTable.CONTENT_URI,
-                        StreamsTable.getContentValues(newStream, false));
+                dao.insert(newStream);
             }
         }
     }
@@ -113,7 +111,7 @@ public class StreamFetcher {
         final Response response = mHttpClient.newCall(new Request.Builder()
                 .url(parent.getUrl())
                 .build()).execute();
-        String mimeType = parent.getMimeType();
+        String mimeType = parent.getMimeTypeAsString();
         if (mimeType != null) {
             if (mimeType.startsWith("text/html")) {
                 parseHtml(parent, list, response);
@@ -222,14 +220,8 @@ public class StreamFetcher {
     }
 
     @NonNull
-    private List<Stream> queryStreamsByParent(@NonNull final ContentResolver cr,
-                                              @NonNull final Stream parent) {
-        return StreamsTable.getRows(cr.query(
-                StreamsTable.CONTENT_URI,
-                null,
-                StreamsTable.FIELD_PARENT_ID + "=?",
-                new String[]{String.valueOf(parent.getId())},
-                null),
-                true);
+    private List<Stream> queryStreamsByParent(@NonNull final Stream parent) {
+        final StreamDao dao = AppDatabase.Builder.getInstance(mContext).streamDao();
+        return dao.getWithParent(parent.getId());
     }
 }

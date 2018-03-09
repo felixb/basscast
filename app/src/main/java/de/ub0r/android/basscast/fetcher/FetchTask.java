@@ -11,7 +11,7 @@ import de.ub0r.android.basscast.model.Stream;
 /**
  * @author flx
  */
-public class FetchTask extends AsyncTask<Void, Void, List<Stream>> {
+public class FetchTask extends AsyncTask<Void, Void, Boolean> {
 
     private static final String TAG = "FetchTask";
 
@@ -22,7 +22,7 @@ public class FetchTask extends AsyncTask<Void, Void, List<Stream>> {
     private final FetcherCallbacks mListener;
 
     public FetchTask(final StreamFetcher fetcher, final Stream parentStream,
-            final FetcherCallbacks listener) {
+                     final FetcherCallbacks listener) {
         mFetcher = fetcher;
         mParentStream = parentStream;
         mListener = listener;
@@ -36,25 +36,24 @@ public class FetchTask extends AsyncTask<Void, Void, List<Stream>> {
     }
 
     @Override
-    protected List<Stream> doInBackground(final Void... voids) {
+    protected Boolean doInBackground(final Void... voids) {
         try {
-            return mFetcher.fetch(mParentStream);
+            final List<Stream> streams = mFetcher.fetch(mParentStream);
+            mFetcher.insert(mParentStream, streams);
+            return true;
         } catch (IOException e) {
             Log.e(TAG, "Error fetching streams", e);
-            return null;
+            return false;
         }
     }
 
     @Override
-    protected void onPostExecute(final List<Stream> streams) {
-        if (streams == null) {
-            if (mListener != null) {
-                mListener.onFetchFailed();
-            }
-        } else {
-            mFetcher.insert(mParentStream, streams);
-            if (mListener != null) {
+    protected void onPostExecute(final Boolean success) {
+        if (mListener != null) {
+            if (success) {
                 mListener.onFetchFinished();
+            } else {
+                mListener.onFetchFailed();
             }
         }
     }

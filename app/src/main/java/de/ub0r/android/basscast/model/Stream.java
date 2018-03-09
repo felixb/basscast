@@ -1,5 +1,11 @@
 package de.ub0r.android.basscast.model;
 
+import android.arch.persistence.room.ColumnInfo;
+import android.arch.persistence.room.Entity;
+import android.arch.persistence.room.Ignore;
+import android.arch.persistence.room.PrimaryKey;
+import android.arch.persistence.room.TypeConverter;
+import android.arch.persistence.room.TypeConverters;
 import android.content.ContentUris;
 import android.net.Uri;
 import android.nfc.NdefRecord;
@@ -11,54 +17,75 @@ import com.google.android.gms.cast.MediaMetadata;
 
 import java.nio.charset.Charset;
 
-import ckm.simple.sql_provider.annotation.SimpleSQLColumn;
-import ckm.simple.sql_provider.annotation.SimpleSQLTable;
 import de.ub0r.android.basscast.BuildConfig;
 
 /**
  * @author flx
  */
-@SimpleSQLTable(table = "streams", provider = "StreamProvider")
+@Entity
 public class Stream {
 
-    @SimpleSQLColumn(value = "_id", primary = true, autoincrement = true)
-    private long id = -1;
+    public static final Uri CONTENT_URI = Uri.parse("content://de.ub0r.android.basscast.streams");
+    private static final String FIELD_ID = "_id";
+    private static final String FIELD_BASE_ID = "base_id";
+    private static final String FIELD_PARENT_ID = "parent_id";
+    private static final String FIELD_BREADCRUMBS = "breadcrumbs";
+    private static final String FIELD_UPDATED = "updated";
+    private static final String FIELD_URL = "url";
+    private static final String FIELD_TITLE = "title";
+    private static final String FIELD_MIME_TYPE = "mime_type";
 
-    @SimpleSQLColumn("base_id")
+    public static class Converters {
+        @TypeConverter
+        public String fromMimeType(final MimeType mimeType) {
+            return mimeType == null ? null : mimeType.getMimeType();
+        }
+
+        @TypeConverter
+        public MimeType toMimeType(final String mimeType) {
+            return mimeType == null ? null : new MimeType(mimeType);
+        }
+    }
+
+    @PrimaryKey(autoGenerate = true)
+    @ColumnInfo(name = FIELD_ID)
+    private long id = 0;
+
+    @ColumnInfo(name = FIELD_BASE_ID)
     private long baseId = -1;
 
-    @SimpleSQLColumn("parent_id")
+    @ColumnInfo(name = FIELD_PARENT_ID)
     private long parentId = -1;
 
-    @SimpleSQLColumn("breadcrumbs")
+    @ColumnInfo(name = FIELD_BREADCRUMBS)
     // ";..;(parent-of-parent.id);(parent.id);"
     private String breadcrumbs;
 
-    @SimpleSQLColumn("updated")
+    @ColumnInfo(name = FIELD_UPDATED)
     private long updated = System.currentTimeMillis();
 
-    @SimpleSQLColumn("url")
+    @ColumnInfo(name = FIELD_URL)
     private String url;
 
-    @SimpleSQLColumn("title")
+    @ColumnInfo(name = FIELD_TITLE)
     private String title;
 
-    @SimpleSQLColumn("mime_type")
-    // shadow only for creating the column, do not use!
-    private String mimeType;
-
+    @ColumnInfo(name = FIELD_MIME_TYPE, typeAffinity = ColumnInfo.TEXT)
+    @TypeConverters(Converters.class)
     private MimeType mMimeType;
 
     public Stream() {
         // empty default constructor
     }
 
+    @Ignore
     public Stream(final String url, final String title, final MimeType mimeType) {
         this.url = url;
         this.title = title;
         this.mMimeType = mimeType;
     }
 
+    @Ignore
     public Stream(@NonNull final Stream parentStream, final String url, final String title,
                   final MimeType mimeType) {
         this(url, title, mimeType);
@@ -72,23 +99,26 @@ public class Stream {
         this.parentId = parentStream.id;
     }
 
+    @Ignore
     public Stream(final Bundle bundle) {
-        this.id = bundle.getLong(StreamsTable.FIELD__ID, -1);
-        this.baseId = bundle.getLong(StreamsTable.FIELD_BASE_ID, -1);
-        this.parentId = bundle.getLong(StreamsTable.FIELD_PARENT_ID, -1);
-        this.breadcrumbs = bundle.getString(StreamsTable.FIELD_BREADCRUMBS);
-        this.updated = bundle.getLong(StreamsTable.FIELD_UPDATED, System.currentTimeMillis());
-        this.url = bundle.getString(StreamsTable.FIELD_URL);
-        this.title = bundle.getString(StreamsTable.FIELD_TITLE);
-        setMimeType(bundle.getString(StreamsTable.FIELD_MIME_TYPE));
+        this.id = bundle.getLong(FIELD_ID, -1);
+        this.baseId = bundle.getLong(FIELD_BASE_ID, -1);
+        this.parentId = bundle.getLong(FIELD_PARENT_ID, -1);
+        this.breadcrumbs = bundle.getString(FIELD_BREADCRUMBS);
+        this.updated = bundle.getLong(FIELD_UPDATED, System.currentTimeMillis());
+        this.url = bundle.getString(FIELD_URL);
+        this.title = bundle.getString(FIELD_TITLE);
+        setMimeType(bundle.getString(FIELD_MIME_TYPE));
     }
 
+    @Ignore
     public Stream(final Uri uri) {
         this.url = uri.getScheme() + "://" + uri.getHost() + uri.getPath();
-        this.title = uri.getQueryParameter(StreamsTable.FIELD_TITLE);
-        setMimeType(uri.getQueryParameter(StreamsTable.FIELD_MIME_TYPE));
+        this.title = uri.getQueryParameter(FIELD_TITLE);
+        setMimeType(uri.getQueryParameter(FIELD_MIME_TYPE));
     }
 
+    @Ignore
     public Stream(final NdefRecord record) {
         this(Uri.parse(new String(parseNdefRecord(record), Charset.forName("UTF-8"))));
     }
@@ -169,12 +199,12 @@ public class Stream {
         this.title = title;
     }
 
-    public String getMimeType() {
-        if (mMimeType == null) {
-            return null;
-        } else {
-            return mMimeType.getMimeType();
-        }
+    public MimeType getMimeType() {
+        return mMimeType;
+    }
+
+    public String getMimeTypeAsString() {
+        return mMimeType == null ? null : mMimeType.getMimeType();
     }
 
     public void setMimeType(final MimeType mimeType) {
@@ -193,33 +223,33 @@ public class Stream {
         MediaMetadata mediaMetadata = new MediaMetadata(mMimeType.getType());
         mediaMetadata.putString(MediaMetadata.KEY_TITLE, title);
         return new MediaInfo.Builder(url)
-                .setContentType(getMimeType())
+                .setContentType(getMimeTypeAsString())
                 .setStreamType(MediaInfo.STREAM_TYPE_BUFFERED)
                 .setMetadata(mediaMetadata)
                 .build();
     }
 
     public Uri getUri() {
-        return ContentUris.withAppendedId(StreamsTable.CONTENT_URI, id);
+        return ContentUris.withAppendedId(CONTENT_URI, id);
     }
 
     public Bundle toBundle() {
         final Bundle b = new Bundle();
-        b.putLong(StreamsTable.FIELD__ID, id);
-        b.putLong(StreamsTable.FIELD_BASE_ID, baseId);
-        b.putLong(StreamsTable.FIELD_PARENT_ID, parentId);
-        b.putString(StreamsTable.FIELD_BREADCRUMBS, breadcrumbs);
-        b.putLong(StreamsTable.FIELD_UPDATED, updated);
-        b.putString(StreamsTable.FIELD_URL, url);
-        b.putString(StreamsTable.FIELD_TITLE, title);
-        b.putString(StreamsTable.FIELD_MIME_TYPE, getMimeType());
+        b.putLong(FIELD_ID, id);
+        b.putLong(FIELD_BASE_ID, baseId);
+        b.putLong(FIELD_PARENT_ID, parentId);
+        b.putString(FIELD_BREADCRUMBS, breadcrumbs);
+        b.putLong(FIELD_UPDATED, updated);
+        b.putString(FIELD_URL, url);
+        b.putString(FIELD_TITLE, title);
+        b.putString(FIELD_MIME_TYPE, getMimeTypeAsString());
         return b;
     }
 
     public Uri toSharableUri() {
         return Uri.parse(url).buildUpon()
-                .appendQueryParameter(StreamsTable.FIELD_MIME_TYPE, getMimeType())
-                .appendQueryParameter(StreamsTable.FIELD_TITLE, title)
+                .appendQueryParameter(FIELD_MIME_TYPE, getMimeTypeAsString())
+                .appendQueryParameter(FIELD_TITLE, title)
                 .build();
     }
 

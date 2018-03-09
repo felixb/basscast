@@ -1,15 +1,13 @@
 package de.ub0r.android.basscast;
 
+import android.arch.lifecycle.LiveData;
+import android.arch.lifecycle.Observer;
 import android.content.Context;
-import android.database.Cursor;
 import android.os.Bundle;
+import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
-import android.support.v4.app.LoaderManager;
-import android.support.v4.content.CursorLoader;
-import android.support.v4.content.Loader;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
@@ -19,29 +17,33 @@ import android.widget.PopupMenu;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import butterknife.Bind;
+import java.util.ArrayList;
+import java.util.List;
+
+import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
+import butterknife.Unbinder;
 import de.ub0r.android.basscast.fetcher.FetcherCallbacks;
+import de.ub0r.android.basscast.model.AppDatabase;
 import de.ub0r.android.basscast.model.Stream;
-import de.ub0r.android.basscast.model.StreamsTable;
+import de.ub0r.android.basscast.model.StreamDao;
+import de.ub0r.android.basscast.tasks.DeleteStreamTask;
 
-public class BrowseFragment extends Fragment
-        implements LoaderManager.LoaderCallbacks<Cursor>, BrowseActivity.OnStateChangeListener,
-        FetcherCallbacks {
+public class BrowseFragment extends Fragment implements BrowseActivity.OnStateChangeListener, FetcherCallbacks {
 
     class StreamHolder extends RecyclerView.ViewHolder implements View.OnClickListener,
             PopupMenu.OnMenuItemClickListener {
 
         private Stream mStream;
 
-        @Bind(R.id.title)
+        @BindView(R.id.title)
         TextView mTitleView;
 
-        @Bind(R.id.url)
+        @BindView(R.id.url)
         TextView mUrlView;
 
-        @Bind(R.id.action_context_menu)
+        @BindView(R.id.action_context_menu)
         ImageButton mContextButton;
 
         public StreamHolder(final View itemView) {
@@ -77,8 +79,7 @@ public class BrowseFragment extends Fragment
                     StreamUtils.editStream(getContext(), mStream);
                     return true;
                 case R.id.action_delete:
-                    StreamUtils.deleteStream(getContext(), mStream);
-                    restartLoader();
+                    new DeleteStreamTask(getActivity(), false).execute(mStream);
                     return true;
                 case R.id.action_play_locally:
                     getBrowseActivity().playStreamLocally(mStream);
@@ -86,10 +87,6 @@ public class BrowseFragment extends Fragment
                 default:
                     return false;
             }
-        }
-
-        public void bindCursor(final Cursor cursor) {
-            bind(StreamsTable.getRow(cursor, false));
         }
 
         private void bind(final Stream stream) {
@@ -101,12 +98,24 @@ public class BrowseFragment extends Fragment
         }
     }
 
-    private class StreamAdapter extends RecyclerViewCursorAdapter<StreamHolder> {
+    private class StreamAdapter extends RecyclerView.Adapter<StreamHolder> {
 
         private final LayoutInflater mLayoutInflater;
+        private List<Stream> mStreams;
 
         public StreamAdapter(final Context context) {
             mLayoutInflater = LayoutInflater.from(context);
+            mStreams = new ArrayList<>();
+        }
+
+        public StreamAdapter(final Context context, final List<Stream> streams) {
+            mLayoutInflater = LayoutInflater.from(context);
+            mStreams = streams;
+        }
+
+        public void swapStreams(final List<Stream> streams) {
+            mStreams = streams == null ? new ArrayList<Stream>() : streams;
+            this.notifyDataSetChanged();
         }
 
         @Override
@@ -116,9 +125,13 @@ public class BrowseFragment extends Fragment
         }
 
         @Override
-        public void onBindViewHolder(StreamHolder holder,
-                                     Cursor cursor) {
-            holder.bindCursor(cursor);
+        public void onBindViewHolder(StreamHolder holder, int position) {
+            holder.bind(mStreams.get(position));
+        }
+
+        @Override
+        public int getItemCount() {
+            return mStreams.size();
         }
     }
 
@@ -128,13 +141,13 @@ public class BrowseFragment extends Fragment
 
     private static final String ARG_IS_LOADING = "IS_LOADING";
 
-    @Bind(android.R.id.list)
+    @BindView(android.R.id.list)
     RecyclerView mRecyclerView;
 
-    @Bind(android.R.id.empty)
+    @BindView(android.R.id.empty)
     View mEmptyView;
 
-    @Bind(R.id.loading)
+    @BindView(R.id.loading)
     View mLoadingView;
 
     private Stream mParentStream;
@@ -142,6 +155,10 @@ public class BrowseFragment extends Fragment
     private StreamAdapter mAdapter;
 
     private boolean mIsLoading;
+
+    private LiveData<List<Stream>> mData;
+
+    private Unbinder mUnbinder;
 
     public static BrowseFragment getInstance(final Stream parentStream) {
         BrowseFragment f = new BrowseFragment();
@@ -177,7 +194,7 @@ public class BrowseFragment extends Fragment
                              final ViewGroup container,
                              final Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_browse, container, false);
-        ButterKnife.bind(this, view);
+        mUnbinder = ButterKnife.bind(this, view);
 
         mRecyclerView.setLayoutManager(new LinearLayoutManager(getActivity()));
         mAdapter = new StreamAdapter(getActivity());
@@ -202,7 +219,7 @@ public class BrowseFragment extends Fragment
 
     @Override
     public void onDestroyView() {
-        ButterKnife.unbind(this);
+        mUnbinder.unbind();
         super.onDestroyView();
     }
 
@@ -215,29 +232,17 @@ public class BrowseFragment extends Fragment
 
     public void restartLoader() {
         if (getActivity() != null) {
-            getLoaderManager().restartLoader(
-                    mParentStream == null ? -1 : (int) mParentStream.getId(), null, this);
+            final StreamDao dao = AppDatabase.Builder.getInstance(getActivity()).streamDao();
+            final long parentId = mParentStream == null ? -1 : mParentStream.getId();
+            mData = dao.getWithParentSync(parentId);
+            mData.observe(this, new Observer<List<Stream>>() {
+                @Override
+                public void onChanged(@Nullable List<Stream> streams) {
+                    mAdapter.swapStreams(streams);
+                    updateViewsVisibility();
+                }
+            });
         }
-    }
-
-    @Override
-    public Loader<Cursor> onCreateLoader(final int id, final Bundle args) {
-        return new CursorLoader(getActivity(), StreamsTable.CONTENT_URI, null,
-                StreamsTable.FIELD_PARENT_ID + "=?", new String[]{String.valueOf(id)},
-                StreamsTable.FIELD_TITLE + " ASC");
-    }
-
-    @Override
-    public void onLoadFinished(final Loader<Cursor> loader, final Cursor data) {
-        Log.d(TAG, "Showing new data set: " + data.getCount());
-        mAdapter.swapCursor(data);
-        updateViewsVisibility();
-    }
-
-    @Override
-    public void onLoaderReset(final Loader<Cursor> loader) {
-        mAdapter.swapCursor(null);
-        updateViewsVisibility();
     }
 
     @Override
@@ -271,8 +276,7 @@ public class BrowseFragment extends Fragment
         if (mEmptyView == null) {
             return;
         }
-        Cursor cursor = mAdapter.getCursor();
-        boolean empty = cursor == null || cursor.getCount() == 0;
+        boolean empty = mData == null || mData.getValue() == null || mData.getValue().size() == 0;
         mEmptyView.setVisibility(empty && !mIsLoading ? View.VISIBLE : View.GONE);
         mLoadingView.setVisibility(empty && mIsLoading ? View.VISIBLE : View.GONE);
     }
