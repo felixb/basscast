@@ -1,24 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
-<android.support.design.widget.CoordinatorLayout
-        xmlns:android="http://schemas.android.com/apk/res/android"
-        xmlns:app="http://schemas.android.com/apk/res-auto"
-        xmlns:tools="http://schemas.android.com/tools"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:fitsSystemWindows="true"
-        tools:context="de.ub0r.android.basscast.BrowseActivity">
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fitsSystemWindows="true"
+    tools:context="de.ub0r.android.basscast.BrowseActivity">
 
     <android.support.design.widget.AppBarLayout
-            android:layout_height="wrap_content"
-            android:layout_width="match_parent"
-            android:theme="@style/AppTheme.AppBarOverlay">
+        android:id="@+id/appbar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:theme="@style/AppTheme.AppBarOverlay">
 
         <android.support.v7.widget.Toolbar
-                android:id="@+id/toolbar"
-                android:layout_width="match_parent"
-                android:layout_height="?attr/actionBarSize"
-                android:background="?attr/colorPrimary"
-                app:popupTheme="@style/AppTheme.PopupOverlay"/>
+            android:id="@+id/toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            android:background="?attr/colorPrimary"
+            app:popupTheme="@style/AppTheme.PopupOverlay" />
 
     </android.support.design.widget.AppBarLayout>
 
@@ -26,24 +26,43 @@
         android:id="@+id/eucookieconsent"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
         android:background="@android:color/background_light"
         android:elevation="@dimen/eucookieconsent_elevation"
         android:paddingLeft="@dimen/eucookieconsent_padding_horizontal"
         android:paddingRight="@dimen/eucookieconsent_padding_horizontal"
-        app:layout_behavior="de.ub0r.android.basscast.BelowToolbarBehavior"
+        app:elevation="@dimen/eucookieconsent_elevation"
         app:hideOutsideEu="true"
+        app:layout_behavior="de.ub0r.android.basscast.BelowToolbarBehavior"
         app:urlLeanMore="https://github.com/felixb/basscast/blob/master/PRIVACY.md" />
 
-    <include layout="@layout/content_browse"/>
+    <include
+        layout="@layout/content_browse"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_above="@id/castMiniController"
+        android:layout_below="@id/appbar" />
 
     <android.support.design.widget.FloatingActionButton
-            android:id="@+id/fab"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="bottom|end"
-            android:layout_margin="@dimen/fab_margin"
-            android:src="@drawable/ic_content_add"/>
+        android:id="@+id/fab"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_above="@id/castMiniController"
+        android:layout_alignBottom="@id/fragment_container"
+        android:layout_alignParentEnd="true"
+        android:layout_alignParentRight="true"
+        android:layout_gravity="bottom|end"
+        android:layout_margin="@dimen/fab_margin"
+        android:src="@drawable/ic_content_add" />
 
-    <include layout="@layout/content_controls"/>
+    <fragment
+        android:id="@+id/castMiniController"
+        class="com.google.android.gms.cast.framework.media.widget.MiniControllerFragment"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:visibility="gone"
+        app:castControlButtons="@array/cast_mini_controller_control_buttons"
+        app:castShowImageThumbnail="false" />
 
-</android.support.design.widget.CoordinatorLayout>
+</RelativeLayout>

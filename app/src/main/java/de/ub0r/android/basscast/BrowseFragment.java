@@ -30,7 +30,7 @@ import de.ub0r.android.basscast.model.Stream;
 import de.ub0r.android.basscast.model.StreamDao;
 import de.ub0r.android.basscast.tasks.DeleteStreamTask;
 
-public class BrowseFragment extends Fragment implements BrowseActivity.OnStateChangeListener, FetcherCallbacks {
+public class BrowseFragment extends Fragment implements FetcherCallbacks {
 
     class StreamHolder extends RecyclerView.ViewHolder implements View.OnClickListener,
             PopupMenu.OnMenuItemClickListener {
@@ -206,14 +206,12 @@ public class BrowseFragment extends Fragment implements BrowseActivity.OnStateCh
     @Override
     public void onResume() {
         super.onResume();
-        getBrowseActivity().setOnStateChangeListener(this);
         getBrowseActivity().setStreamInfo(mParentStream);
         restartLoader();
     }
 
     @Override
     public void onPause() {
-        getBrowseActivity().setOnStateChangeListener(null);
         super.onPause();
     }
 
@@ -242,13 +240,6 @@ public class BrowseFragment extends Fragment implements BrowseActivity.OnStateCh
                     updateViewsVisibility();
                 }
             });
-        }
-    }
-
-    @Override
-    public void onStateChange() {
-        if (mAdapter != null) {
-            mAdapter.notifyDataSetChanged();
         }
     }
 
