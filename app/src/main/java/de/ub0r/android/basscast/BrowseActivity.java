@@ -325,7 +325,7 @@ public class BrowseActivity extends AppCompatActivity {
             mToolbar.setNavigationOnClickListener(null);
         } else {
             mToolbar.setSubtitle(stream.getTitle());
-            // FIXME mToolbar.setNavigationIcon(R.drawable.abc_ic_ab_back_mtrl_am_alpha);
+            mToolbar.setNavigationIcon(R.drawable.ic_action_arrow_back);
             mToolbar.setNavigationOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(final View view) {
