@@ -22,20 +22,6 @@
 
     </android.support.design.widget.AppBarLayout>
 
-    <de.ub0r.android.eucookieconsent.EuCookieConsentView
-        android:id="@+id/eucookieconsent"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_alignParentTop="true"
-        android:background="@android:color/background_light"
-        android:elevation="@dimen/eucookieconsent_elevation"
-        android:paddingLeft="@dimen/eucookieconsent_padding_horizontal"
-        android:paddingRight="@dimen/eucookieconsent_padding_horizontal"
-        app:elevation="@dimen/eucookieconsent_elevation"
-        app:hideOutsideEu="true"
-        app:layout_behavior="de.ub0r.android.basscast.BelowToolbarBehavior"
-        app:urlLeanMore="https://github.com/felixb/basscast/blob/master/PRIVACY.md" />
-
     <include
         layout="@layout/content_browse"
         android:layout_width="match_parent"

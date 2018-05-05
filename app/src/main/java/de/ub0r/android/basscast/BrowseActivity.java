@@ -17,9 +17,6 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.Toast;
 
-import com.google.android.gms.ads.AdListener;
-import com.google.android.gms.ads.AdRequest;
-import com.google.android.gms.ads.InterstitialAd;
 import com.google.android.gms.cast.MediaInfo;
 import com.google.android.gms.cast.MediaLoadOptions;
 import com.google.android.gms.cast.framework.CastButtonFactory;
@@ -126,8 +123,6 @@ public class BrowseActivity extends AppCompatActivity {
         }
     };
 
-    InterstitialAd mInterstitialAd;
-
     private StreamFetcher mFetcher;
 
     @BindView(R.id.toolbar)
@@ -163,16 +158,6 @@ public class BrowseActivity extends AppCompatActivity {
                         EditStreamActivity.class));
             }
         });
-
-        mInterstitialAd = new InterstitialAd(this);
-        mInterstitialAd.setAdUnitId("ca-app-pub-1948477123608376/3415873285");
-        mInterstitialAd.setAdListener(new AdListener() {
-            @Override
-            public void onAdClosed() {
-                requestNewInterstitial();
-            }
-        });
-        requestNewInterstitial();
     }
 
     @Override
@@ -242,9 +227,6 @@ public class BrowseActivity extends AppCompatActivity {
         if (stream.isPlayable()) {
             if (isConnected()) {
                 castStream(stream);
-                if (mInterstitialAd.isLoaded()) {
-                    mInterstitialAd.show();
-                }
             } else {
                 Toast.makeText(this, R.string.error_not_connected, Toast.LENGTH_LONG).show();
             }
@@ -280,12 +262,6 @@ public class BrowseActivity extends AppCompatActivity {
                 .addToBackStack(null)
                 .commit();
         new FetchTask(mFetcher, parentStream, fragment).execute((Void[]) null);
-    }
-
-    private void requestNewInterstitial() {
-        AdRequest adRequest = new AdRequest.Builder()
-                .build();
-        mInterstitialAd.loadAd(adRequest);
     }
 
     private void insertDefaultStreams() {
