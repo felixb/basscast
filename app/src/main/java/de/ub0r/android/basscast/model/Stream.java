@@ -15,6 +15,8 @@ import android.support.annotation.NonNull;
 import com.google.android.gms.cast.MediaInfo;
 import com.google.android.gms.cast.MediaMetadata;
 
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
 import java.nio.charset.Charset;
 
 import de.ub0r.android.basscast.BuildConfig;
@@ -67,6 +69,9 @@ public class Stream {
     @ColumnInfo(name = FIELD_URL)
     private String url;
 
+    @Ignore
+    private String decodedUrl;
+
     @ColumnInfo(name = FIELD_TITLE)
     private String title;
 
@@ -80,7 +85,7 @@ public class Stream {
 
     @Ignore
     public Stream(final String url, final String title, final MimeType mimeType) {
-        this.url = url;
+        setUrl(url);
         this.title = title;
         this.mMimeType = mimeType;
     }
@@ -106,14 +111,14 @@ public class Stream {
         this.parentId = bundle.getLong(FIELD_PARENT_ID, -1);
         this.breadcrumbs = bundle.getString(FIELD_BREADCRUMBS);
         this.updated = bundle.getLong(FIELD_UPDATED, System.currentTimeMillis());
-        this.url = bundle.getString(FIELD_URL);
+        setUrl(bundle.getString(FIELD_URL));
         this.title = bundle.getString(FIELD_TITLE);
         setMimeType(bundle.getString(FIELD_MIME_TYPE));
     }
 
     @Ignore
     public Stream(final Uri uri) {
-        this.url = uri.getScheme() + "://" + uri.getHost() + uri.getPath();
+        setUrl(uri.getScheme() + "://" + uri.getHost() + uri.getPath());
         this.title = uri.getQueryParameter(FIELD_TITLE);
         setMimeType(uri.getQueryParameter(FIELD_MIME_TYPE));
     }
@@ -189,6 +194,15 @@ public class Stream {
 
     public void setUrl(final String url) {
         this.url = url;
+        try {
+            decodedUrl = URLDecoder.decode(url, "UTF-8");
+        } catch (UnsupportedEncodingException e) {
+            decodedUrl = url;
+        }
+    }
+
+    public String getDecodedUrl() {
+        return decodedUrl;
     }
 
     public String getTitle() {
@@ -222,7 +236,7 @@ public class Stream {
     public MediaInfo getMediaMetadata() {
         MediaMetadata mediaMetadata = new MediaMetadata(mMimeType.getType());
         mediaMetadata.putString(MediaMetadata.KEY_TITLE, title);
-        return new MediaInfo.Builder(url)
+        return new MediaInfo.Builder(getDecodedUrl())
                 .setContentType(getMimeTypeAsString())
                 .setStreamType(MediaInfo.STREAM_TYPE_BUFFERED)
                 .setMetadata(mediaMetadata)

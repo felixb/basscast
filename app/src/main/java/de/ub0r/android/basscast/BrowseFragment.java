@@ -92,7 +92,7 @@ public class BrowseFragment extends Fragment implements FetcherCallbacks {
         private void bind(final Stream stream) {
             mStream = stream;
             mTitleView.setText(stream.getTitle());
-            mUrlView.setText(stream.getUrl());
+            mUrlView.setText(stream.getDecodedUrl());
             mContextButton.setVisibility(stream.isBaseStream() || stream.isPlayable()
                     ? View.VISIBLE : View.GONE);
         }

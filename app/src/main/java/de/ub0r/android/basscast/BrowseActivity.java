@@ -26,6 +26,8 @@ import com.google.android.gms.cast.framework.Session;
 import com.google.android.gms.cast.framework.SessionManager;
 import com.google.android.gms.cast.framework.SessionManagerListener;
 import com.google.android.gms.cast.framework.media.RemoteMediaClient;
+import com.google.android.gms.common.api.PendingResult;
+import com.google.android.gms.common.api.Status;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -251,7 +253,15 @@ public class BrowseActivity extends AppCompatActivity {
                 Toast.LENGTH_LONG).show();
         MediaInfo mediaInfo = stream.getMediaMetadata();
         RemoteMediaClient remoteMediaClient = mCastSession.getRemoteMediaClient();
-        remoteMediaClient.load(mediaInfo, new MediaLoadOptions.Builder().build());
+        remoteMediaClient.load(mediaInfo, new MediaLoadOptions.Builder().build()).addStatusListener(new PendingResult.StatusListener() {
+            @Override
+            public void onComplete(Status status) {
+                Log.i(TAG, "remoteMediaClient.load(): " + status.toString());
+                if (!status.isSuccess()) {
+                    Toast.makeText(BrowseActivity.this, R.string.error_loading_media, Toast.LENGTH_LONG).show();
+                }
+            }
+        });
     }
 
     private void showStream(final Stream parentStream) {
