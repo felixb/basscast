@@ -8,7 +8,14 @@
     <string name="action_context_menu">Context menu</string>
     <string name="action_play">Play</string>
     <string name="action_play_locally">Play locally</string>
+    <string name="action_queue_show">Show queue</string>
+    <string name="action_queue_append">Append to queue</string>
+    <string name="action_queue_append_all">Append all to queue</string>
+    <string name="action_queue_clear">Clear queue</string>
     <string name="casting_stream">Casting %1$s on %2$s</string>
+    <string name="queue_stream">Queueing %1$s on %2$s</string>
+    <string name="queue_streams">Queueing %1$d on %2$s</string>
+    <string name="queue">Queue</string>
     <string name="playing_stream_on_this_device">Playing %1$s on this device</string>
     <string name="title_hint">Title</string>
     <string name="url_hint">Url</string>
@@ -35,6 +42,10 @@
     <string name="error_fetching_mime_type">Problem fetching mime type</string>
     <string name="error_fetching_stream">Problem fetching stream content</string>
     <string name="error_loading_media">Problem occurred with media during loading</string>
+    <string name="error_queueing_media">Problem occurred with media during queueing</string>
+    <string name="error_play_from_queue">Problem occurred while jumping to queue item</string>
+    <string name="error_removing_from_queue">Problem occurred while removing item from queue</string>
+    <string name="error_clearing_queue">Problem occurred while clearing the queue</string>
     <string name="error_opening_media">Problem opening media during loading</string>
     <string name="error_not_connected">You need to connect to a chrome cast device first</string>
 </resources>

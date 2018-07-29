@@ -4,11 +4,14 @@ import android.arch.lifecycle.LiveData;
 import android.arch.lifecycle.Observer;
 import android.content.Context;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
@@ -46,7 +49,7 @@ public class BrowseFragment extends Fragment implements FetcherCallbacks {
         @BindView(R.id.action_context_menu)
         ImageButton mContextButton;
 
-        public StreamHolder(final View itemView) {
+        StreamHolder(final View itemView) {
             super(itemView);
             ButterKnife.bind(this, itemView);
             itemView.setOnClickListener(this);
@@ -59,17 +62,21 @@ public class BrowseFragment extends Fragment implements FetcherCallbacks {
 
         @OnClick(R.id.action_context_menu)
         void onPopupMenuClick(final View view) {
-            PopupMenu menu = new PopupMenu(getContext(), view);
-            menu.inflate(R.menu.menu_browse_context);
-            menu.setOnMenuItemClickListener(this);
+            final PopupMenu popup = new PopupMenu(getContext(), view);
+            popup.inflate(R.menu.menu_browse_context);
+            popup.setOnMenuItemClickListener(this);
+            final Menu menu = popup.getMenu();
             if (!mStream.isBaseStream()) {
-                menu.getMenu().removeItem(R.id.action_edit);
-                menu.getMenu().removeItem(R.id.action_delete);
+                menu.removeItem(R.id.action_edit);
+                menu.removeItem(R.id.action_delete);
             }
             if (!mStream.isPlayable()) {
-                menu.getMenu().removeItem(R.id.action_play_locally);
+                menu.removeItem(R.id.action_play_locally);
             }
-            menu.show();
+            if (!getBrowseActivity().isConnected()) {
+                menu.removeItem(R.id.action_queue_append);
+            }
+            popup.show();
         }
 
         @Override
@@ -83,6 +90,9 @@ public class BrowseFragment extends Fragment implements FetcherCallbacks {
                     return true;
                 case R.id.action_play_locally:
                     getBrowseActivity().playStreamLocally(mStream);
+                    return true;
+                case R.id.action_queue_append:
+                    getBrowseActivity().queueStream(mStream);
                     return true;
                 default:
                     return false;
@@ -103,14 +113,9 @@ public class BrowseFragment extends Fragment implements FetcherCallbacks {
         private final LayoutInflater mLayoutInflater;
         private List<Stream> mStreams;
 
-        public StreamAdapter(final Context context) {
+        StreamAdapter(final Context context) {
             mLayoutInflater = LayoutInflater.from(context);
             mStreams = new ArrayList<>();
-        }
-
-        public StreamAdapter(final Context context, final List<Stream> streams) {
-            mLayoutInflater = LayoutInflater.from(context);
-            mStreams = streams;
         }
 
         public void swapStreams(final List<Stream> streams) {
@@ -118,20 +123,35 @@ public class BrowseFragment extends Fragment implements FetcherCallbacks {
             this.notifyDataSetChanged();
         }
 
+        @NonNull
         @Override
-        public StreamHolder onCreateViewHolder(final ViewGroup parent, final int viewType) {
-            View view = mLayoutInflater.inflate(R.layout.list_item_stream, parent, false);
+        public StreamHolder onCreateViewHolder(@NonNull final ViewGroup parent, final int viewType) {
+            final View view = mLayoutInflater.inflate(R.layout.list_item_stream, parent, false);
             return new StreamHolder(view);
         }
 
         @Override
-        public void onBindViewHolder(StreamHolder holder, int position) {
+        public void onBindViewHolder(@NonNull StreamHolder holder, int position) {
             holder.bind(mStreams.get(position));
         }
 
         @Override
         public int getItemCount() {
             return mStreams.size();
+        }
+
+        public List<Stream> getStreams() {
+            return mStreams;
+        }
+
+        public List<Stream> getPlayableStreams() {
+            List<Stream> streams = new ArrayList<>();
+            for (Stream stream : mStreams) {
+                if (stream.isPlayable()) {
+                    streams.add(stream);
+                }
+            }
+            return streams;
         }
     }
 
@@ -180,6 +200,7 @@ public class BrowseFragment extends Fragment implements FetcherCallbacks {
     @Override
     public void onCreate(final Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        setHasOptionsMenu(true);
         Bundle args = getArguments();
         if (args != null && args.containsKey(ARG_PARENT_STREAM)) {
             mParentStream = new Stream(args.getBundle(ARG_PARENT_STREAM));
@@ -190,7 +211,7 @@ public class BrowseFragment extends Fragment implements FetcherCallbacks {
     }
 
     @Override
-    public View onCreateView(final LayoutInflater inflater,
+    public View onCreateView(@NonNull final LayoutInflater inflater,
                              final ViewGroup container,
                              final Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_browse, container, false);
@@ -206,7 +227,10 @@ public class BrowseFragment extends Fragment implements FetcherCallbacks {
     @Override
     public void onResume() {
         super.onResume();
-        getBrowseActivity().setStreamInfo(mParentStream);
+        final BrowseActivity activity = getBrowseActivity();
+        final boolean hasParentStream = mParentStream != null;
+        activity.setSubtitle(hasParentStream ? mParentStream.getTitle() : null);
+        activity.setHomeAsUp(hasParentStream);
         restartLoader();
     }
 
@@ -223,9 +247,33 @@ public class BrowseFragment extends Fragment implements FetcherCallbacks {
 
 
     @Override
-    public void onSaveInstanceState(final Bundle outState) {
+    public void onSaveInstanceState(@NonNull final Bundle outState) {
         outState.putBoolean(ARG_IS_LOADING, mIsLoading);
         super.onSaveInstanceState(outState);
+    }
+
+    @Override
+    public void onCreateOptionsMenu(final Menu menu, final MenuInflater inflater) {
+        inflater.inflate(R.menu.menu_browse_fragment, menu);
+    }
+
+    @Override
+    public void onPrepareOptionsMenu(final Menu menu) {
+        super.onPrepareOptionsMenu(menu);
+        if (!getBrowseActivity().isConnected() && mAdapter.getPlayableStreams().size() > 0) {
+            menu.removeItem(R.id.action_queue_append_all);
+        }
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(final MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.action_queue_append_all:
+                getBrowseActivity().queueStreams(mAdapter.getPlayableStreams());
+                return true;
+            default:
+                return super.onOptionsItemSelected(item);
+        }
     }
 
     public void restartLoader() {

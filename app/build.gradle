@@ -38,7 +38,7 @@ dependencies {
     implementation 'com.android.support:mediarouter-v7:27.1.1'
     implementation 'com.android.support:recyclerview-v7:27.1.1'
 
-    implementation 'com.google.android.gms:play-services-cast-framework:15.0.1'
+    implementation 'com.google.android.gms:play-services-cast-framework:16.0.0'
 
     implementation 'com.jakewharton:butterknife:8.8.1'
     annotationProcessor 'com.jakewharton:butterknife-compiler:8.8.1'

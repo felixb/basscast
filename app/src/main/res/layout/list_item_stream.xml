@@ -31,12 +31,12 @@
             android:textAppearance="?android:textAppearanceSmall" />
     </LinearLayout>
 
-    <ImageButton
-        android:id="@+id/action_context_menu"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center_vertical"
-        android:background="@drawable/button_selector"
-        android:src="@drawable/ic_navigation_more_vert"
-        android:text="@string/action_context_menu" />
+        <ImageButton
+            android:id="@+id/action_context_menu"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical"
+            android:background="@drawable/button_selector"
+            android:src="@drawable/ic_navigation_more_vert"
+            android:text="@string/action_context_menu" />
 </LinearLayout>

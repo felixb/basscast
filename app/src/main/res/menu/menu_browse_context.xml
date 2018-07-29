@@ -1,14 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
-<menu
-        xmlns:android="http://schemas.android.com/apk/res/android">
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
 
     <item
-            android:id="@+id/action_play_locally"
-            android:title="@string/action_play_locally"/>
+        android:id="@+id/action_queue_append"
+        android:title="@string/action_queue_append" />
     <item
-            android:id="@+id/action_edit"
-            android:title="@string/action_edit"/>
+        android:id="@+id/action_play_locally"
+        android:title="@string/action_play_locally" />
     <item
-            android:id="@+id/action_delete"
-            android:title="@string/action_delete"/>
+        android:id="@+id/action_edit"
+        android:title="@string/action_edit" />
+    <item
+        android:id="@+id/action_delete"
+        android:title="@string/action_delete" />
 </menu>

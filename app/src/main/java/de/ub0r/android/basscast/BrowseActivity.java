@@ -1,12 +1,12 @@
 package de.ub0r.android.basscast;
 
-import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
+import android.support.annotation.StringRes;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v7.app.AppCompatActivity;
@@ -19,15 +19,21 @@ import android.widget.Toast;
 
 import com.google.android.gms.cast.MediaInfo;
 import com.google.android.gms.cast.MediaLoadOptions;
+import com.google.android.gms.cast.MediaQueueItem;
+import com.google.android.gms.cast.MediaStatus;
 import com.google.android.gms.cast.framework.CastButtonFactory;
 import com.google.android.gms.cast.framework.CastContext;
 import com.google.android.gms.cast.framework.CastSession;
 import com.google.android.gms.cast.framework.Session;
 import com.google.android.gms.cast.framework.SessionManager;
 import com.google.android.gms.cast.framework.SessionManagerListener;
+import com.google.android.gms.cast.framework.media.MediaQueue;
 import com.google.android.gms.cast.framework.media.RemoteMediaClient;
 import com.google.android.gms.common.api.PendingResult;
 import com.google.android.gms.common.api.Status;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -38,6 +44,8 @@ import de.ub0r.android.basscast.model.Stream;
 import de.ub0r.android.basscast.tasks.StreamTask;
 
 public class BrowseActivity extends AppCompatActivity {
+
+    public static final double PRELOAD_TIME = 10;
 
     interface OnStateChangeListener {
 
@@ -125,6 +133,22 @@ public class BrowseActivity extends AppCompatActivity {
         }
     };
 
+    private RemoteMediaClient.Callback mCallback = new RemoteMediaClient.Callback() {
+        @Override
+        public void onQueueStatusUpdated() {
+            invalidateOptionsMenu();
+        }
+    };
+
+    final View.OnClickListener mOnHomeClickListener = new View.OnClickListener() {
+        @Override
+        public void onClick(final View view) {
+            Intent intent = new Intent(BrowseActivity.this, BrowseActivity.class);
+            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+            startActivity(intent);
+        }
+    };
+
     private StreamFetcher mFetcher;
 
     @BindView(R.id.toolbar)
@@ -183,9 +207,21 @@ public class BrowseActivity extends AppCompatActivity {
 
     @Override
     public boolean onCreateOptionsMenu(final Menu menu) {
-        getMenuInflater().inflate(R.menu.menu_browse, menu);
-
+        getMenuInflater().inflate(R.menu.menu_browse_activity, menu);
         CastButtonFactory.setUpMediaRouteButton(getApplicationContext(), menu, R.id.action_cast);
+        return true;
+    }
+
+    @Override
+    public boolean onPrepareOptionsMenu(final Menu menu) {
+        if (mCastSession == null) {
+            menu.removeItem(R.id.action_queue_show);
+        } else {
+            final RemoteMediaClient remoteMediaClient = mCastSession.getRemoteMediaClient();
+            if (remoteMediaClient.getMediaQueue().getItemCount() == 0) {
+                menu.removeItem(R.id.action_queue_show);
+            }
+        }
         return true;
     }
 
@@ -195,34 +231,34 @@ public class BrowseActivity extends AppCompatActivity {
             case R.id.action_about:
                 startActivity(new Intent(this, AboutActivity.class));
                 return true;
+            case R.id.action_queue_show:
+                showQueue();
+                return true;
             default:
                 return super.onOptionsItemSelected(item);
         }
     }
 
-    @SuppressLint("PrivateResource")
-    public void setStreamInfo(final Stream stream) {
-        if (stream == null) {
-            mToolbar.setSubtitle(null);
+    public void setSubtitle(final String title) {
+        mToolbar.setSubtitle(title);
+    }
+
+    public void setHomeAsUp(final boolean enable) {
+        if (enable) {
+            mToolbar.setNavigationIcon(R.drawable.ic_action_arrow_back);
+            mToolbar.setNavigationOnClickListener(mOnHomeClickListener);
+        } else {
             mToolbar.setNavigationIcon(null);
             mToolbar.setNavigationOnClickListener(null);
-        } else {
-            mToolbar.setSubtitle(stream.getTitle());
-            mToolbar.setNavigationIcon(R.drawable.ic_action_arrow_back);
-            mToolbar.setNavigationOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(final View view) {
-                    Intent intent = new Intent(BrowseActivity.this, BrowseActivity.class);
-                    intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-                    startActivity(intent);
-                }
-            });
         }
     }
 
     private void initCastSession() {
         mCastSession = mSessionManager.getCurrentCastSession();
         mSessionManager.addSessionManagerListener(mSessionManagerListener);
+        if (mCastSession != null) {
+            mCastSession.getRemoteMediaClient().registerCallback(mCallback);
+        }
     }
 
     public void onStreamClick(final Stream stream) {
@@ -237,7 +273,7 @@ public class BrowseActivity extends AppCompatActivity {
         }
     }
 
-    private boolean isConnected() {
+    boolean isConnected() {
         return mCastSession != null && mCastSession.getCastDevice() != null;
     }
 
@@ -251,17 +287,89 @@ public class BrowseActivity extends AppCompatActivity {
         Toast.makeText(this,
                 getString(R.string.casting_stream, stream.getTitle(), mCastSession.getCastDevice().getFriendlyName()),
                 Toast.LENGTH_LONG).show();
-        MediaInfo mediaInfo = stream.getMediaMetadata();
-        RemoteMediaClient remoteMediaClient = mCastSession.getRemoteMediaClient();
-        remoteMediaClient.load(mediaInfo, new MediaLoadOptions.Builder().build()).addStatusListener(new PendingResult.StatusListener() {
-            @Override
-            public void onComplete(Status status) {
-                Log.i(TAG, "remoteMediaClient.load(): " + status.toString());
-                if (!status.isSuccess()) {
-                    Toast.makeText(BrowseActivity.this, R.string.error_loading_media, Toast.LENGTH_LONG).show();
-                }
+        final RemoteMediaClient remoteMediaClient = mCastSession.getRemoteMediaClient();
+        final MediaInfo mediaInfo = stream.getMediaMetadata();
+        load(remoteMediaClient, mediaInfo);
+    }
+
+    void queueStream(final Stream stream) {
+        Toast.makeText(this,
+                getString(R.string.queue_stream, stream.getTitle(), mCastSession.getCastDevice().getFriendlyName()),
+                Toast.LENGTH_LONG).show();
+        final RemoteMediaClient remoteMediaClient = mCastSession.getRemoteMediaClient();
+        final MediaInfo mediaInfo = stream.getMediaMetadata();
+        if (remoteMediaClient.getMediaQueue().getItemCount() == 0) {
+            load(remoteMediaClient, mediaInfo);
+        } else {
+            append(remoteMediaClient, mediaInfo);
+        }
+    }
+
+    void queueStreams(final List<Stream> streams) {
+        Toast.makeText(this,
+                getString(R.string.queue_streams, streams.size(), mCastSession.getCastDevice().getFriendlyName()),
+                Toast.LENGTH_LONG).show();
+
+        final RemoteMediaClient remoteMediaClient = mCastSession.getRemoteMediaClient();
+        final MediaQueue mediaQueue = remoteMediaClient.getMediaQueue();
+
+        final List<MediaQueueItem> queue = new ArrayList<>();
+        for (Stream stream : streams) {
+            queue.add(createQueueItem(stream.getMediaMetadata()));
+        }
+
+        final MediaQueueItem[] queueItems = queue.toArray(new MediaQueueItem[queue.size()]);
+        if (mediaQueue.getItemCount() == 0) {
+            remoteMediaClient.queueLoad(queueItems, 0, MediaStatus.REPEAT_MODE_REPEAT_OFF, null)
+                    .addStatusListener(new ResultLogger(this, "queueLoad", R.string.error_queueing_media));
+        } else {
+            remoteMediaClient.queueInsertItems(queueItems, MediaQueueItem.INVALID_ITEM_ID, null)
+                    .addStatusListener(new ResultLogger(this, "queueInsertItems", R.string.error_queueing_media));
+        }
+    }
+
+    void playFromQueue(final int itemtId) {
+        final RemoteMediaClient remoteMediaClient = mCastSession.getRemoteMediaClient();
+        remoteMediaClient.queueJumpToItem(itemtId, null)
+                .addStatusListener(new ResultLogger(this, "queueJumpToItem", String.valueOf(itemtId), R.string.error_play_from_queue));
+    }
+
+    void removeFromQueue(final int itemtId) {
+        final RemoteMediaClient remoteMediaClient = mCastSession.getRemoteMediaClient();
+        remoteMediaClient.queueRemoveItem(itemtId, null)
+                .addStatusListener(new ResultLogger(this, "queueRemoveItem", String.valueOf(itemtId), R.string.error_removing_from_queue));
+    }
+
+    void clearQueue() {
+        final RemoteMediaClient remoteMediaClient = mCastSession.getRemoteMediaClient();
+        final MediaQueue mediaQueue = remoteMediaClient.getMediaQueue();
+        final int count = mediaQueue.getItemCount();
+        if (count > 0) {
+            int[] ids = new int[count];
+            for (int i = 0; i < count; i++) {
+                ids[i] = mediaQueue.itemIdAtIndex(i);
             }
-        });
+            remoteMediaClient.queueRemoveItems(ids, null)
+                    .addStatusListener(new ResultLogger(this, "queueRemoveItems", R.string.error_clearing_queue));
+        }
+    }
+
+    private void append(final RemoteMediaClient remoteMediaClient, final MediaInfo mediaInfo) {
+        final MediaQueueItem queueItem = createQueueItem(mediaInfo);
+        remoteMediaClient.queueAppendItem(queueItem, null)
+                .addStatusListener(new ResultLogger(this, "queueAppendItem", R.string.error_queueing_media));
+    }
+
+    private MediaQueueItem createQueueItem(final MediaInfo mediaInfo) {
+        return new MediaQueueItem.Builder(mediaInfo)
+                .setAutoplay(true)
+                .setPreloadTime(PRELOAD_TIME)
+                .build();
+    }
+
+    private void load(RemoteMediaClient remoteMediaClient, MediaInfo mediaInfo) {
+        remoteMediaClient.load(mediaInfo, new MediaLoadOptions.Builder().build())
+                .addStatusListener(new ResultLogger(this, "load", R.string.error_loading_media));
     }
 
     private void showStream(final Stream parentStream) {
@@ -272,6 +380,15 @@ public class BrowseActivity extends AppCompatActivity {
                 .addToBackStack(null)
                 .commit();
         new FetchTask(mFetcher, parentStream, fragment).execute((Void[]) null);
+    }
+
+    private void showQueue() {
+        QueueFragment fragment = QueueFragment.getInstance();
+        getSupportFragmentManager().beginTransaction()
+                .replace(R.id.fragment_container, fragment)
+                .setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN)
+                .addToBackStack(null)
+                .commit();
     }
 
     private void insertDefaultStreams() {
@@ -288,5 +405,42 @@ public class BrowseActivity extends AppCompatActivity {
             streams[i] = new Stream(Uri.parse(uris[i]));
         }
         return streams;
+    }
+
+    private static class ResultLogger implements PendingResult.StatusListener {
+
+        private final Activity mActivity;
+        private final String mMethodName;
+        private final String mParams;
+        @StringRes
+        private final int mErrorText;
+
+        private ResultLogger(final Activity activity, final String methodName, final String params, @StringRes final int errorText) {
+            mActivity = activity;
+            mMethodName = methodName;
+            mParams = params;
+            mErrorText = errorText;
+        }
+
+        private ResultLogger(final Activity activity, final String methodName, @StringRes final int errorText) {
+            this(activity, methodName, null, errorText);
+        }
+
+        @Override
+        public void onComplete(final Status status) {
+            Log.i(TAG, "remoteMediaClient." + mMethodName + "(" + getParamsString() + "): " + status.toString());
+            mActivity.invalidateOptionsMenu();
+            if (!status.isSuccess()) {
+                Toast.makeText(mActivity, mErrorText, Toast.LENGTH_LONG).show();
+            }
+        }
+
+        private String getParamsString() {
+            if (mParams != null) {
+                return mParams;
+            } else {
+                return "";
+            }
+        }
     }
 }
