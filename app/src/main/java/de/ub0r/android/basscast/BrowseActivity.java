@@ -47,11 +47,6 @@ public class BrowseActivity extends AppCompatActivity {
 
     public static final double PRELOAD_TIME = 10;
 
-    interface OnStateChangeListener {
-
-        void onStateChange();
-    }
-
     private static class InsertStreamsTask extends StreamTask {
 
         InsertStreamsTask(Activity activity) {
@@ -155,7 +150,7 @@ public class BrowseActivity extends AppCompatActivity {
     Toolbar mToolbar;
 
     @BindView(R.id.fab)
-    FloatingActionButton mFloatingActionButtonView;
+    FloatingActionButton mFloatingActionButton;
 
     private Unbinder mUnbinder;
 
@@ -176,14 +171,34 @@ public class BrowseActivity extends AppCompatActivity {
         }
 
         mFetcher = new StreamFetcher(this);
+    }
 
-        mFloatingActionButtonView.setOnClickListener(new View.OnClickListener() {
+    void setFloatingActionButtonModeAddStream() {
+        mFloatingActionButton.setVisibility(View.VISIBLE);
+        mFloatingActionButton.setImageResource(R.drawable.ic_content_add);
+        mFloatingActionButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 startActivity(new Intent(Intent.ACTION_INSERT, null, BrowseActivity.this,
                         EditStreamActivity.class));
             }
         });
+
+    }
+
+    void setFloatingActionButtonModeAddAllToQueue(final List<Stream> streams) {
+        mFloatingActionButton.setVisibility(View.VISIBLE);
+        mFloatingActionButton.setImageResource(R.drawable.ic_playlist_add);
+        mFloatingActionButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                queueStreams(streams);
+            }
+        });
+    }
+
+    void setFloatingActionButtonDisabled() {
+        mFloatingActionButton.setVisibility(View.GONE);
     }
 
     @Override
@@ -214,14 +229,8 @@ public class BrowseActivity extends AppCompatActivity {
 
     @Override
     public boolean onPrepareOptionsMenu(final Menu menu) {
-        if (mCastSession == null) {
-            menu.removeItem(R.id.action_queue_show);
-        } else {
-            final RemoteMediaClient remoteMediaClient = mCastSession.getRemoteMediaClient();
-            if (remoteMediaClient.getMediaQueue().getItemCount() == 0) {
-                menu.removeItem(R.id.action_queue_show);
-            }
-        }
+        boolean showQueueItem = !(mCastSession == null || mCastSession.getRemoteMediaClient().getMediaQueue().getItemCount() == 0);
+        menu.findItem(R.id.action_queue_show).setVisible(showQueueItem);
         return true;
     }
 

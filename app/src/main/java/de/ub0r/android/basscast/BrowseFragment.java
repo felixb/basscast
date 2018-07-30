@@ -11,7 +11,6 @@ import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.Menu;
-import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
@@ -200,7 +199,6 @@ public class BrowseFragment extends Fragment implements FetcherCallbacks {
     @Override
     public void onCreate(final Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setHasOptionsMenu(true);
         Bundle args = getArguments();
         if (args != null && args.containsKey(ARG_PARENT_STREAM)) {
             mParentStream = new Stream(args.getBundle(ARG_PARENT_STREAM));
@@ -231,6 +229,7 @@ public class BrowseFragment extends Fragment implements FetcherCallbacks {
         final boolean hasParentStream = mParentStream != null;
         activity.setSubtitle(hasParentStream ? mParentStream.getTitle() : null);
         activity.setHomeAsUp(hasParentStream);
+        updateFloatingActionButtonMode();
         restartLoader();
     }
 
@@ -252,30 +251,6 @@ public class BrowseFragment extends Fragment implements FetcherCallbacks {
         super.onSaveInstanceState(outState);
     }
 
-    @Override
-    public void onCreateOptionsMenu(final Menu menu, final MenuInflater inflater) {
-        inflater.inflate(R.menu.menu_browse_fragment, menu);
-    }
-
-    @Override
-    public void onPrepareOptionsMenu(final Menu menu) {
-        super.onPrepareOptionsMenu(menu);
-        if (!getBrowseActivity().isConnected() && mAdapter.getPlayableStreams().size() > 0) {
-            menu.removeItem(R.id.action_queue_append_all);
-        }
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(final MenuItem item) {
-        switch (item.getItemId()) {
-            case R.id.action_queue_append_all:
-                getBrowseActivity().queueStreams(mAdapter.getPlayableStreams());
-                return true;
-            default:
-                return super.onOptionsItemSelected(item);
-        }
-    }
-
     public void restartLoader() {
         if (getActivity() != null) {
             final StreamDao dao = AppDatabase.Builder.getInstance(getActivity()).streamDao();
@@ -286,6 +261,7 @@ public class BrowseFragment extends Fragment implements FetcherCallbacks {
                 public void onChanged(@Nullable List<Stream> streams) {
                     mAdapter.swapStreams(streams);
                     updateViewsVisibility();
+                    updateFloatingActionButtonMode();
                 }
             });
         }
@@ -318,5 +294,21 @@ public class BrowseFragment extends Fragment implements FetcherCallbacks {
         boolean empty = mData == null || mData.getValue() == null || mData.getValue().size() == 0;
         mEmptyView.setVisibility(empty && !mIsLoading ? View.VISIBLE : View.GONE);
         mLoadingView.setVisibility(empty && mIsLoading ? View.VISIBLE : View.GONE);
+    }
+
+    private void updateFloatingActionButtonMode() {
+        final BrowseActivity activity = getBrowseActivity();
+        if (mParentStream == null) {
+            activity.setFloatingActionButtonModeAddStream();
+        } else if (!activity.isConnected()) {
+            activity.setFloatingActionButtonDisabled();
+        } else {
+            final List<Stream> playableStreams = mAdapter.getPlayableStreams();
+            if (playableStreams.size() > 0) {
+                activity.setFloatingActionButtonModeAddAllToQueue(playableStreams);
+            } else {
+                activity.setFloatingActionButtonDisabled();
+            }
+        }
     }
 }
