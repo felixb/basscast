@@ -54,7 +54,7 @@ public class QueueFragment extends Fragment {
         @Override
         public void onClick(final View view) {
             if (mItem != null) {
-                getBrowseActivity().playFromQueue(mItem.getItemId());
+                getStreamController().playFromQueue(mItem.getItemId());
             }
         }
 
@@ -71,7 +71,7 @@ public class QueueFragment extends Fragment {
             switch (menuItem.getItemId()) {
                 case R.id.action_delete:
                     if (mItem != null) {
-                        getBrowseActivity().removeFromQueue(mItem.getItemId());
+                        getStreamController().removeFromQueue(mItem.getItemId());
                     }
                     return true;
                 default:
@@ -110,8 +110,7 @@ public class QueueFragment extends Fragment {
     private Unbinder mUnbinder;
 
     public static QueueFragment getInstance() {
-        QueueFragment f = new QueueFragment();
-        return f;
+        return new QueueFragment();
     }
 
     public QueueFragment() {
@@ -119,6 +118,10 @@ public class QueueFragment extends Fragment {
 
     public BrowseActivity getBrowseActivity() {
         return (BrowseActivity) getActivity();
+    }
+
+    private StreamController getStreamController() {
+        return getBrowseActivity().getStreamController();
     }
 
     @Override
@@ -166,7 +169,7 @@ public class QueueFragment extends Fragment {
     public boolean onOptionsItemSelected(final MenuItem item) {
         switch (item.getItemId()) {
             case R.id.action_queue_clear:
-                getBrowseActivity().clearQueue();
+                getStreamController().clearQueue();
                 return true;
             default:
                 return super.onOptionsItemSelected(item);

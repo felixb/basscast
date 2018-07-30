@@ -6,7 +6,6 @@ import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
-import android.support.annotation.StringRes;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v7.app.AppCompatActivity;
@@ -17,22 +16,8 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.Toast;
 
-import com.google.android.gms.cast.MediaInfo;
-import com.google.android.gms.cast.MediaLoadOptions;
-import com.google.android.gms.cast.MediaQueueItem;
-import com.google.android.gms.cast.MediaStatus;
 import com.google.android.gms.cast.framework.CastButtonFactory;
-import com.google.android.gms.cast.framework.CastContext;
-import com.google.android.gms.cast.framework.CastSession;
-import com.google.android.gms.cast.framework.Session;
-import com.google.android.gms.cast.framework.SessionManager;
-import com.google.android.gms.cast.framework.SessionManagerListener;
-import com.google.android.gms.cast.framework.media.MediaQueue;
-import com.google.android.gms.cast.framework.media.RemoteMediaClient;
-import com.google.android.gms.common.api.PendingResult;
-import com.google.android.gms.common.api.Status;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import butterknife.BindView;
@@ -44,8 +29,6 @@ import de.ub0r.android.basscast.model.Stream;
 import de.ub0r.android.basscast.tasks.StreamTask;
 
 public class BrowseActivity extends AppCompatActivity {
-
-    public static final double PRELOAD_TIME = 10;
 
     private static class InsertStreamsTask extends StreamTask {
 
@@ -74,67 +57,6 @@ public class BrowseActivity extends AppCompatActivity {
 
     private final static String PREFS_DEFAULT_STREAMS_INSERTED = "default_streams_inserted";
 
-    private CastSession mCastSession;
-    private SessionManager mSessionManager;
-    private final SessionManagerListener mSessionManagerListener = new SessionManagerListener() {
-        @Override
-        public void onSessionStarting(Session session) {
-
-        }
-
-        @Override
-        public void onSessionStarted(Session session, String sessionId) {
-            initCastSession();
-            invalidateOptionsMenu();
-        }
-
-        @Override
-        public void onSessionStartFailed(Session session, int i) {
-
-        }
-
-        @Override
-        public void onSessionEnding(Session session) {
-
-        }
-
-        @Override
-        public void onSessionResumed(Session session, boolean wasSuspended) {
-            initCastSession();
-            invalidateOptionsMenu();
-        }
-
-        @Override
-        public void onSessionResumeFailed(Session session, int i) {
-
-        }
-
-        @Override
-        public void onSessionSuspended(Session session, int i) {
-
-        }
-
-        @Override
-        public void onSessionEnded(Session session, int error) {
-            if (session == mCastSession) {
-                mCastSession = null;
-            }
-            invalidateOptionsMenu();
-        }
-
-        @Override
-        public void onSessionResuming(Session session, String s) {
-
-        }
-    };
-
-    private RemoteMediaClient.Callback mCallback = new RemoteMediaClient.Callback() {
-        @Override
-        public void onQueueStatusUpdated() {
-            invalidateOptionsMenu();
-        }
-    };
-
     final View.OnClickListener mOnHomeClickListener = new View.OnClickListener() {
         @Override
         public void onClick(final View view) {
@@ -145,6 +67,7 @@ public class BrowseActivity extends AppCompatActivity {
     };
 
     private StreamFetcher mFetcher;
+    private StreamController mController;
 
     @BindView(R.id.toolbar)
     Toolbar mToolbar;
@@ -156,7 +79,7 @@ public class BrowseActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(final Bundle savedInstanceState) {
-        mSessionManager = CastContext.getSharedInstance(this).getSessionManager();
+        mController = new StreamController(this);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_browse);
         mUnbinder = ButterKnife.bind(this);
@@ -192,7 +115,7 @@ public class BrowseActivity extends AppCompatActivity {
         mFloatingActionButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                queueStreams(streams);
+                mController.queueStreams(streams);
             }
         });
     }
@@ -203,19 +126,19 @@ public class BrowseActivity extends AppCompatActivity {
 
     @Override
     protected void onResume() {
-        initCastSession();
+        mController.initCastSession();
         super.onResume();
     }
 
     @Override
     protected void onPause() {
         super.onPause();
-        mSessionManager.removeSessionManagerListener(mSessionManagerListener);
-        mCastSession = null;
+        mController.endCastSession();
     }
 
     @Override
     protected void onDestroy() {
+        mController = null;
         mUnbinder.unbind();
         super.onDestroy();
     }
@@ -229,7 +152,7 @@ public class BrowseActivity extends AppCompatActivity {
 
     @Override
     public boolean onPrepareOptionsMenu(final Menu menu) {
-        boolean showQueueItem = !(mCastSession == null || mCastSession.getRemoteMediaClient().getMediaQueue().getItemCount() == 0);
+        boolean showQueueItem = mController.isConnected() && mController.getMediaQueue().getItemCount() > 0;
         menu.findItem(R.id.action_queue_show).setVisible(showQueueItem);
         return true;
     }
@@ -262,18 +185,10 @@ public class BrowseActivity extends AppCompatActivity {
         }
     }
 
-    private void initCastSession() {
-        mCastSession = mSessionManager.getCurrentCastSession();
-        mSessionManager.addSessionManagerListener(mSessionManagerListener);
-        if (mCastSession != null) {
-            mCastSession.getRemoteMediaClient().registerCallback(mCallback);
-        }
-    }
-
     public void onStreamClick(final Stream stream) {
         if (stream.isPlayable()) {
-            if (isConnected()) {
-                castStream(stream);
+            if (mController.isConnected()) {
+                mController.castStream(stream);
             } else {
                 Toast.makeText(this, R.string.error_not_connected, Toast.LENGTH_LONG).show();
             }
@@ -282,103 +197,8 @@ public class BrowseActivity extends AppCompatActivity {
         }
     }
 
-    boolean isConnected() {
-        return mCastSession != null && mCastSession.getCastDevice() != null;
-    }
-
-    void playStreamLocally(final Stream stream) {
-        final int resId = R.string.playing_stream_on_this_device;
-        Toast.makeText(this, getString(resId, stream.getTitle()), Toast.LENGTH_LONG).show();
-        startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(stream.getUrl())));
-    }
-
-    void castStream(final Stream stream) {
-        Toast.makeText(this,
-                getString(R.string.casting_stream, stream.getTitle(), mCastSession.getCastDevice().getFriendlyName()),
-                Toast.LENGTH_LONG).show();
-        final RemoteMediaClient remoteMediaClient = mCastSession.getRemoteMediaClient();
-        final MediaInfo mediaInfo = stream.getMediaMetadata();
-        load(remoteMediaClient, mediaInfo);
-    }
-
-    void queueStream(final Stream stream) {
-        Toast.makeText(this,
-                getString(R.string.queue_stream, stream.getTitle(), mCastSession.getCastDevice().getFriendlyName()),
-                Toast.LENGTH_LONG).show();
-        final RemoteMediaClient remoteMediaClient = mCastSession.getRemoteMediaClient();
-        final MediaInfo mediaInfo = stream.getMediaMetadata();
-        if (remoteMediaClient.getMediaQueue().getItemCount() == 0) {
-            load(remoteMediaClient, mediaInfo);
-        } else {
-            append(remoteMediaClient, mediaInfo);
-        }
-    }
-
-    void queueStreams(final List<Stream> streams) {
-        Toast.makeText(this,
-                getString(R.string.queue_streams, streams.size(), mCastSession.getCastDevice().getFriendlyName()),
-                Toast.LENGTH_LONG).show();
-
-        final RemoteMediaClient remoteMediaClient = mCastSession.getRemoteMediaClient();
-        final MediaQueue mediaQueue = remoteMediaClient.getMediaQueue();
-
-        final List<MediaQueueItem> queue = new ArrayList<>();
-        for (Stream stream : streams) {
-            queue.add(createQueueItem(stream.getMediaMetadata()));
-        }
-
-        final MediaQueueItem[] queueItems = queue.toArray(new MediaQueueItem[queue.size()]);
-        if (mediaQueue.getItemCount() == 0) {
-            remoteMediaClient.queueLoad(queueItems, 0, MediaStatus.REPEAT_MODE_REPEAT_OFF, null)
-                    .addStatusListener(new ResultLogger(this, "queueLoad", R.string.error_queueing_media));
-        } else {
-            remoteMediaClient.queueInsertItems(queueItems, MediaQueueItem.INVALID_ITEM_ID, null)
-                    .addStatusListener(new ResultLogger(this, "queueInsertItems", R.string.error_queueing_media));
-        }
-    }
-
-    void playFromQueue(final int itemtId) {
-        final RemoteMediaClient remoteMediaClient = mCastSession.getRemoteMediaClient();
-        remoteMediaClient.queueJumpToItem(itemtId, null)
-                .addStatusListener(new ResultLogger(this, "queueJumpToItem", String.valueOf(itemtId), R.string.error_play_from_queue));
-    }
-
-    void removeFromQueue(final int itemtId) {
-        final RemoteMediaClient remoteMediaClient = mCastSession.getRemoteMediaClient();
-        remoteMediaClient.queueRemoveItem(itemtId, null)
-                .addStatusListener(new ResultLogger(this, "queueRemoveItem", String.valueOf(itemtId), R.string.error_removing_from_queue));
-    }
-
-    void clearQueue() {
-        final RemoteMediaClient remoteMediaClient = mCastSession.getRemoteMediaClient();
-        final MediaQueue mediaQueue = remoteMediaClient.getMediaQueue();
-        final int count = mediaQueue.getItemCount();
-        if (count > 0) {
-            int[] ids = new int[count];
-            for (int i = 0; i < count; i++) {
-                ids[i] = mediaQueue.itemIdAtIndex(i);
-            }
-            remoteMediaClient.queueRemoveItems(ids, null)
-                    .addStatusListener(new ResultLogger(this, "queueRemoveItems", R.string.error_clearing_queue));
-        }
-    }
-
-    private void append(final RemoteMediaClient remoteMediaClient, final MediaInfo mediaInfo) {
-        final MediaQueueItem queueItem = createQueueItem(mediaInfo);
-        remoteMediaClient.queueAppendItem(queueItem, null)
-                .addStatusListener(new ResultLogger(this, "queueAppendItem", R.string.error_queueing_media));
-    }
-
-    private MediaQueueItem createQueueItem(final MediaInfo mediaInfo) {
-        return new MediaQueueItem.Builder(mediaInfo)
-                .setAutoplay(true)
-                .setPreloadTime(PRELOAD_TIME)
-                .build();
-    }
-
-    private void load(RemoteMediaClient remoteMediaClient, MediaInfo mediaInfo) {
-        remoteMediaClient.load(mediaInfo, new MediaLoadOptions.Builder().build())
-                .addStatusListener(new ResultLogger(this, "load", R.string.error_loading_media));
+    public StreamController getStreamController() {
+        return mController;
     }
 
     private void showStream(final Stream parentStream) {
@@ -414,42 +234,5 @@ public class BrowseActivity extends AppCompatActivity {
             streams[i] = new Stream(Uri.parse(uris[i]));
         }
         return streams;
-    }
-
-    private static class ResultLogger implements PendingResult.StatusListener {
-
-        private final Activity mActivity;
-        private final String mMethodName;
-        private final String mParams;
-        @StringRes
-        private final int mErrorText;
-
-        private ResultLogger(final Activity activity, final String methodName, final String params, @StringRes final int errorText) {
-            mActivity = activity;
-            mMethodName = methodName;
-            mParams = params;
-            mErrorText = errorText;
-        }
-
-        private ResultLogger(final Activity activity, final String methodName, @StringRes final int errorText) {
-            this(activity, methodName, null, errorText);
-        }
-
-        @Override
-        public void onComplete(final Status status) {
-            Log.i(TAG, "remoteMediaClient." + mMethodName + "(" + getParamsString() + "): " + status.toString());
-            mActivity.invalidateOptionsMenu();
-            if (!status.isSuccess()) {
-                Toast.makeText(mActivity, mErrorText, Toast.LENGTH_LONG).show();
-            }
-        }
-
-        private String getParamsString() {
-            if (mParams != null) {
-                return mParams;
-            } else {
-                return "";
-            }
-        }
     }
 }

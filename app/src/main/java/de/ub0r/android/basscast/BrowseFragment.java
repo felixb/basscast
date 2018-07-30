@@ -72,7 +72,7 @@ public class BrowseFragment extends Fragment implements FetcherCallbacks {
             if (!mStream.isPlayable()) {
                 menu.removeItem(R.id.action_play_locally);
             }
-            if (!getBrowseActivity().isConnected()) {
+            if (!getStreamController().isConnected()) {
                 menu.removeItem(R.id.action_queue_append);
             }
             popup.show();
@@ -88,10 +88,10 @@ public class BrowseFragment extends Fragment implements FetcherCallbacks {
                     new DeleteStreamTask(getActivity(), false).execute(mStream);
                     return true;
                 case R.id.action_play_locally:
-                    getBrowseActivity().playStreamLocally(mStream);
+                    getStreamController().playStreamLocally(mStream);
                     return true;
                 case R.id.action_queue_append:
-                    getBrowseActivity().queueStream(mStream);
+                    getStreamController().queueStream(mStream);
                     return true;
                 default:
                     return false;
@@ -194,6 +194,10 @@ public class BrowseFragment extends Fragment implements FetcherCallbacks {
 
     public BrowseActivity getBrowseActivity() {
         return (BrowseActivity) getActivity();
+    }
+
+    private StreamController getStreamController() {
+        return getBrowseActivity().getStreamController();
     }
 
     @Override
@@ -300,7 +304,7 @@ public class BrowseFragment extends Fragment implements FetcherCallbacks {
         final BrowseActivity activity = getBrowseActivity();
         if (mParentStream == null) {
             activity.setFloatingActionButtonModeAddStream();
-        } else if (!activity.isConnected()) {
+        } else if (!activity.getStreamController().isConnected()) {
             activity.setFloatingActionButtonDisabled();
         } else {
             final List<Stream> playableStreams = mAdapter.getPlayableStreams();
