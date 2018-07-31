@@ -32,7 +32,6 @@ public class StreamController {
     private static final double PRELOAD_TIME = 10;
 
     private final Activity mActivity;
-    private final SessionManager mSessionManager;
     private CastSession mCastSession;
 
     private final SessionManagerListener<Session> mSessionManagerListener = new SessionManagerListener<Session>() {
@@ -89,16 +88,20 @@ public class StreamController {
 
     public StreamController(Activity activity) {
         mActivity = activity;
-        mSessionManager = CastContext.getSharedInstance(activity).getSessionManager();
+    }
+
+    private SessionManager getSessionManager() {
+        return CastContext.getSharedInstance(mActivity).getSessionManager();
     }
 
     void initCastSession() {
-        mCastSession = mSessionManager.getCurrentCastSession();
-        mSessionManager.addSessionManagerListener(mSessionManagerListener);
+        final SessionManager sessionManager = getSessionManager();
+        mCastSession = sessionManager.getCurrentCastSession();
+        sessionManager.addSessionManagerListener(mSessionManagerListener);
     }
 
     void endCastSession() {
-        mSessionManager.removeSessionManagerListener(mSessionManagerListener);
+        getSessionManager().removeSessionManagerListener(mSessionManagerListener);
         mCastSession = null;
     }
 
