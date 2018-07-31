@@ -20,9 +20,6 @@ import com.google.android.gms.cast.framework.CastButtonFactory;
 
 import java.util.List;
 
-import butterknife.BindView;
-import butterknife.ButterKnife;
-import butterknife.Unbinder;
 import de.ub0r.android.basscast.fetcher.FetchTask;
 import de.ub0r.android.basscast.fetcher.StreamFetcher;
 import de.ub0r.android.basscast.model.Stream;
@@ -54,8 +51,7 @@ public class BrowseActivity extends AppCompatActivity {
     }
 
     private static final String TAG = "BrowserActivity";
-
-    private final static String PREFS_DEFAULT_STREAMS_INSERTED = "default_streams_inserted";
+    private static final String PREFS_DEFAULT_STREAMS_INSERTED = "default_streams_inserted";
 
     final View.OnClickListener mOnHomeClickListener = new View.OnClickListener() {
         @Override
@@ -68,21 +64,16 @@ public class BrowseActivity extends AppCompatActivity {
 
     private StreamFetcher mFetcher;
     private StreamController mController;
-
-    @BindView(R.id.toolbar)
-    Toolbar mToolbar;
-
-    @BindView(R.id.fab)
-    FloatingActionButton mFloatingActionButton;
-
-    private Unbinder mUnbinder;
+    private Toolbar mToolbar;
+    private FloatingActionButton mFloatingActionButton;
 
     @Override
     protected void onCreate(final Bundle savedInstanceState) {
         mController = new StreamController(this);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_browse);
-        mUnbinder = ButterKnife.bind(this);
+        mToolbar = findViewById(R.id.toolbar);
+        mFloatingActionButton = findViewById(R.id.fab);
         setSupportActionBar(mToolbar);
 
         if (savedInstanceState == null) {
@@ -139,7 +130,6 @@ public class BrowseActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         mController = null;
-        mUnbinder.unbind();
         super.onDestroy();
     }
 

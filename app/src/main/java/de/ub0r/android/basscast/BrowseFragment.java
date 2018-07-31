@@ -22,10 +22,6 @@ import android.widget.Toast;
 import java.util.ArrayList;
 import java.util.List;
 
-import butterknife.BindView;
-import butterknife.ButterKnife;
-import butterknife.OnClick;
-import butterknife.Unbinder;
 import de.ub0r.android.basscast.fetcher.FetcherCallbacks;
 import de.ub0r.android.basscast.model.AppDatabase;
 import de.ub0r.android.basscast.model.Stream;
@@ -38,20 +34,23 @@ public class BrowseFragment extends Fragment implements FetcherCallbacks {
             PopupMenu.OnMenuItemClickListener {
 
         private Stream mStream;
-
-        @BindView(R.id.title)
-        TextView mTitleView;
-
-        @BindView(R.id.url)
-        TextView mUrlView;
-
-        @BindView(R.id.action_context_menu)
-        ImageButton mContextButton;
+        private TextView mTitleView;
+        private TextView mUrlView;
+        private ImageButton mContextButton;
 
         StreamHolder(final View itemView) {
             super(itemView);
-            ButterKnife.bind(this, itemView);
             itemView.setOnClickListener(this);
+            mTitleView = itemView.findViewById(R.id.title);
+            mUrlView = itemView.findViewById(R.id.url);
+            mContextButton = itemView.findViewById(R.id.action_context_menu);
+            itemView.findViewById(R.id.action_context_menu)
+                    .setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(final View view) {
+                            onPopupMenuClick(view);
+                        }
+                    });
         }
 
         @Override
@@ -59,7 +58,6 @@ public class BrowseFragment extends Fragment implements FetcherCallbacks {
             getBrowseActivity().onStreamClick(mStream);
         }
 
-        @OnClick(R.id.action_context_menu)
         void onPopupMenuClick(final View view) {
             final PopupMenu popup = new PopupMenu(getContext(), view);
             popup.inflate(R.menu.menu_browse_context);
@@ -154,30 +152,15 @@ public class BrowseFragment extends Fragment implements FetcherCallbacks {
         }
     }
 
-    private static final String TAG = "BrowseFragment";
-
     private static final String ARG_PARENT_STREAM = "PARENT_STREAM";
-
     private static final String ARG_IS_LOADING = "IS_LOADING";
-
-    @BindView(android.R.id.list)
-    RecyclerView mRecyclerView;
-
-    @BindView(android.R.id.empty)
-    View mEmptyView;
-
-    @BindView(R.id.loading)
-    View mLoadingView;
-
+    private RecyclerView mRecyclerView;
+    private View mEmptyView;
+    private View mLoadingView;
     private Stream mParentStream;
-
     private StreamAdapter mAdapter;
-
     private boolean mIsLoading;
-
     private LiveData<List<Stream>> mData;
-
-    private Unbinder mUnbinder;
 
     public static BrowseFragment getInstance(final Stream parentStream) {
         BrowseFragment f = new BrowseFragment();
@@ -217,8 +200,9 @@ public class BrowseFragment extends Fragment implements FetcherCallbacks {
                              final ViewGroup container,
                              final Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_browse, container, false);
-        mUnbinder = ButterKnife.bind(this, view);
-
+        mRecyclerView = view.findViewById(android.R.id.list);
+        mEmptyView = view.findViewById(android.R.id.empty);
+        mLoadingView = view.findViewById(R.id.loading);
         mRecyclerView.setLayoutManager(new LinearLayoutManager(getActivity()));
         mAdapter = new StreamAdapter(getActivity());
         mRecyclerView.setAdapter(mAdapter);
@@ -241,13 +225,6 @@ public class BrowseFragment extends Fragment implements FetcherCallbacks {
     public void onPause() {
         super.onPause();
     }
-
-    @Override
-    public void onDestroyView() {
-        mUnbinder.unbind();
-        super.onDestroyView();
-    }
-
 
     @Override
     public void onSaveInstanceState(@NonNull final Bundle outState) {

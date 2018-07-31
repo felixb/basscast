@@ -22,24 +22,24 @@ import com.google.android.gms.cast.framework.media.MediaQueue;
 import com.google.android.gms.cast.framework.media.MediaQueueRecyclerViewAdapter;
 import com.google.android.gms.cast.framework.media.RemoteMediaClient;
 
-import butterknife.BindView;
-import butterknife.ButterKnife;
-import butterknife.OnClick;
-import butterknife.Unbinder;
-
 public class QueueFragment extends Fragment {
 
     class QueueHolder extends RecyclerView.ViewHolder implements View.OnClickListener, PopupMenu.OnMenuItemClickListener {
 
-        @BindView(R.id.title)
-        TextView mTitleView;
-
+        private TextView mTitleView;
         private MediaQueueItem mItem;
 
         QueueHolder(final View itemView) {
             super(itemView);
-            ButterKnife.bind(this, itemView);
             itemView.setOnClickListener(this);
+            mTitleView = itemView.findViewById(R.id.title);
+            itemView.findViewById(R.id.action_context_menu)
+                    .setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(final View view) {
+                            onPopupMenuClick(view);
+                        }
+                    });
         }
 
         public void bind(MediaQueueItem item) {
@@ -58,7 +58,6 @@ public class QueueFragment extends Fragment {
             }
         }
 
-        @OnClick(R.id.action_context_menu)
         void onPopupMenuClick(final View view) {
             final PopupMenu popup = new PopupMenu(getContext(), view);
             popup.inflate(R.menu.menu_queue_context);
@@ -101,13 +100,8 @@ public class QueueFragment extends Fragment {
 
     }
 
-    private static final String TAG = "QueueFragment";
-
-    @BindView(android.R.id.list)
-    RecyclerView mRecyclerView;
-
+    private RecyclerView mRecyclerView;
     private QueueAdapter mAdapter;
-    private Unbinder mUnbinder;
 
     public static QueueFragment getInstance() {
         return new QueueFragment();
@@ -135,7 +129,7 @@ public class QueueFragment extends Fragment {
                              final ViewGroup container,
                              final Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_queue, container, false);
-        mUnbinder = ButterKnife.bind(this, view);
+        mRecyclerView = view.findViewById(android.R.id.list);
 
         final Context context = getContext();
         final RemoteMediaClient remoteMediaClient = CastContext.getSharedInstance(context).getSessionManager().getCurrentCastSession().getRemoteMediaClient();
@@ -152,12 +146,6 @@ public class QueueFragment extends Fragment {
         final BrowseActivity activity = getBrowseActivity();
         activity.setSubtitle(getString(R.string.queue));
         activity.setHomeAsUp(true);
-    }
-
-    @Override
-    public void onDestroyView() {
-        mUnbinder.unbind();
-        super.onDestroyView();
     }
 
     @Override

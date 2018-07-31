@@ -34,8 +34,6 @@
     <string name="about_website">Website:</string>
     <string name="about_used_libraries">Used libraries:</string>
     <string name="about_website_url" translatable="false">https://github.com/felixb/basscast</string>
-    <string name="about_libraries_butterknife" translatable="false">butterknife, Apache License 2.0, https://github.com/JakeWharton/butterknife</string>
-    <string name="about_libraries_eucookieconsent" translatable="false">EU Cookie Consent, MIT License, https://github.com/felixb/eucookieconsent</string>
     <string name="about_libraries_jsoup" translatable="false">JSOUP, MIT License, http://jsoup.org/</string>
     <string name="about_libraries_okhttp" translatable="false">OkHTTP, Apache License 2.0, https://github.com/square/okhttp</string>
     <string name="about_libraries_simple_sql_provider" translatable="false">Simple SQL Provider, Apache License 2.0, https://github.com/ckurtm/simple-sql-provider</string>

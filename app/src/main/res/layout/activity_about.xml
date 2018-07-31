@@ -57,22 +57,6 @@
             android:layout_marginLeft="@dimen/about_padding_horizontal"
             android:layout_marginStart="@dimen/about_padding_horizontal"
             android:autoLink="web"
-            android:text="@string/about_libraries_butterknife" />
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginLeft="@dimen/about_padding_horizontal"
-            android:layout_marginStart="@dimen/about_padding_horizontal"
-            android:autoLink="web"
-            android:text="@string/about_libraries_eucookieconsent" />
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginLeft="@dimen/about_padding_horizontal"
-            android:layout_marginStart="@dimen/about_padding_horizontal"
-            android:autoLink="web"
             android:text="@string/about_libraries_jsoup" />
 
         <TextView

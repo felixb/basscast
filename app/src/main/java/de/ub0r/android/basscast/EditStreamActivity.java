@@ -23,9 +23,6 @@ import android.view.MenuItem;
 import android.widget.EditText;
 import android.widget.Toast;
 
-import butterknife.BindView;
-import butterknife.ButterKnife;
-import butterknife.Unbinder;
 import de.ub0r.android.basscast.fetcher.FetchMimeTypeTask;
 import de.ub0r.android.basscast.fetcher.FetcherCallbacks;
 import de.ub0r.android.basscast.fetcher.StreamFetcher;
@@ -87,25 +84,20 @@ public class EditStreamActivity extends AppCompatActivity implements
     }
 
     private static final String TAG = "EditStreamActivity";
-
     private static final String ARG_STREAM = "STREAM";
-
-    @BindView(R.id.title)
-    EditText mTitleView;
-    @BindView(R.id.url)
-    EditText mUrlView;
-
+    private EditText mTitleView;
+    private EditText mUrlView;
     private Stream mStream;
     private StreamFetcher mFetcher;
     private AlertDialog mFetchingDialog;
-    private Unbinder mUnbinder;
 
     @SuppressLint("StaticFieldLeak")
     @Override
     protected void onCreate(final Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_edit_stream);
-        mUnbinder = ButterKnife.bind(this);
+        mTitleView = findViewById(R.id.title);
+        mUrlView = findViewById(R.id.url);
 
         mFetcher = new StreamFetcher(this);
 
@@ -136,12 +128,6 @@ public class EditStreamActivity extends AppCompatActivity implements
         }
 
         restoreViewsFromStream();
-    }
-
-    @Override
-    protected void onDestroy() {
-        mUnbinder.unbind();
-        super.onDestroy();
     }
 
     @Override
