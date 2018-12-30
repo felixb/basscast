@@ -11,7 +11,7 @@ import com.google.android.gms.cast.framework.media.NotificationOptions;
 
 import java.util.List;
 
-class CastOptionsProvider implements OptionsProvider {
+public class CastOptionsProvider implements OptionsProvider {
 
     @Override
     public CastOptions getCastOptions(Context context) {
